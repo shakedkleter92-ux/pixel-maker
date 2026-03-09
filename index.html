@@ -1,0 +1,2567 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Pixel Maker" />
+    <title>Pixel Maker</title>
+    <link rel="manifest" href="manifest.json" />
+    <!-- אייקון למסך הבית — משתמש באייקון מהתיקייה -->
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --bg: #fff;
+            --panel: #f0f0f0;
+            --surface: #e4e4e4;
+            --border: #000;
+            --text: #000;
+            --muted: #666
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'IBM Plex Mono', monospace;
+            background: var(--bg);
+            color: var(--text)
+        }
+
+        #app {
+            display: flex;
+            height: 100vh;
+            width: 100vw
+        }
+
+        /* Panel */
+        #panel {
+            width: 270px;
+            min-width: 250px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent
+        }
+
+        #panel-header {
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        #panel-header h1 {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase
+        }
+
+        #panel-header p {
+            font-size: 9px;
+            color: var(--muted);
+            margin-top: 3px;
+            letter-spacing: .05em
+        }
+
+        .section {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .section:last-child {
+            border-bottom: none
+        }
+
+        .sec-label {
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .sec-num {
+            font-size: 8px;
+            color: var(--text);
+            opacity: .35
+        }
+
+        /* Shape */
+        #shape-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px
+        }
+
+        .shape-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 0;
+            padding: 9px 4px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-family: 'IBM Plex Mono', monospace;
+            transition: background .1s, color .1s;
+            line-height: 1.2
+        }
+
+        .shape-btn:hover {
+            background: var(--surface);
+            color: var(--text)
+        }
+
+        .shape-btn.active {
+            background: var(--text);
+            color: var(--bg)
+        }
+
+        #custom-controls {
+            margin-top: 10px;
+            display: none
+        }
+
+        #custom-hint {
+            font-size: 8px;
+            color: var(--muted);
+            line-height: 1.7;
+            margin-bottom: 8px;
+            letter-spacing: .03em
+        }
+
+        #custom-hint strong {
+            color: var(--text)
+        }
+
+        /* Sliders */
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 7px
+        }
+
+        .slider-row:last-child {
+            margin-bottom: 0
+        }
+
+        .sl-label {
+            font-size: 9px;
+            color: var(--muted);
+            min-width: 58px
+        }
+
+        .sl-val {
+            font-size: 9px;
+            font-weight: 600;
+            min-width: 32px;
+            text-align: right
+        }
+
+        input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 1px;
+            background: var(--border);
+            outline: none;
+            cursor: pointer
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 10px;
+            height: 10px;
+            border-radius: 0;
+            background: var(--text);
+            cursor: pointer
+        }
+
+        /* Color rows */
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 7px
+        }
+
+        .color-row:last-child {
+            margin-bottom: 0
+        }
+
+        .color-row label {
+            font-size: 9px;
+            color: var(--muted);
+            flex: 1
+        }
+
+        input[type=color] {
+            width: 30px;
+            height: 22px;
+            border: 1px solid var(--border);
+            border-radius: 0;
+            background: none;
+            padding: 1px;
+            cursor: pointer
+        }
+
+        /* Fill mode switch */
+        #fill-mode {
+            display: flex;
+            margin-bottom: 10px
+        }
+
+        .fm-btn {
+            flex: 1;
+            padding: 8px 6px;
+            border: 1px solid var(--border);
+            border-radius: 0;
+            background: var(--bg);
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: .09em;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--muted);
+            transition: background .1s
+        }
+
+        .fm-btn:first-child {
+            border-right: none
+        }
+
+        .fm-btn.active {
+            background: var(--text);
+            color: var(--bg)
+        }
+
+        /* Drop zone */
+        #drop-zone,
+        #ref-zone {
+            border: 1px dashed var(--border);
+            border-radius: 0;
+            padding: 11px 10px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: background .15s;
+            margin-bottom: 8px
+        }
+
+        #drop-zone:hover,
+        #drop-zone.drag-over,
+        #ref-zone:hover {
+            background: var(--surface)
+        }
+
+        .dz-input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer
+        }
+
+        .dz-text {
+            font-size: 9px;
+            color: var(--muted);
+            line-height: 1.5
+        }
+
+        #file-name,
+        #ref-name {
+            margin-top: 3px;
+            font-size: 9px;
+            font-weight: 600;
+            word-break: break-all
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 0;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            transition: background .1s, color .1s;
+            margin-bottom: 5px
+        }
+
+        .btn:last-child {
+            margin-bottom: 0
+        }
+
+        .btn-fill {
+            background: var(--text);
+            color: var(--bg)
+        }
+
+        .btn-fill:hover {
+            background: var(--muted)
+        }
+
+        .btn-fill:disabled {
+            opacity: .35;
+            cursor: not-allowed
+        }
+
+        .btn-outline {
+            background: var(--bg);
+            color: var(--muted)
+        }
+
+        .btn-outline:hover {
+            background: var(--surface);
+            color: var(--text)
+        }
+
+        /* Canvas area */
+        #main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            position: relative;
+            overflow: hidden
+        }
+
+        #main::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(45deg, #e8e8e8 25%, transparent 25%), linear-gradient(-45deg, #e8e8e8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e8e8e8 75%), linear-gradient(-45deg, transparent 75%, #e8e8e8 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0
+        }
+
+        #grid-canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1
+        }
+
+        /* Live: canvas full viewport – 9:16 fills screen, header/bar stay on top */
+        body.live-fullscreen #grid-canvas {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            z-index: 1;
+        }
+
+        #shape-editor {
+            display: none;
+            position: relative;
+            z-index: 1;
+            cursor: crosshair;
+            border: 1px solid var(--border);
+            border-radius: 0;
+            background: #fff
+        }
+
+        #editor-status {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text);
+            color: var(--bg);
+            font-size: 9px;
+            font-family: 'IBM Plex Mono', monospace;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: 5px 12px;
+            pointer-events: none;
+            z-index: 10;
+            white-space: nowrap
+        }
+
+        /* ───── Mobile top header (mode: Draw / Image / Live) ───── */
+        #mob-mode-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 48px;
+            z-index: 100;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            flex-direction: row;
+            align-items: stretch;
+        }
+        #mob-mode-header .mob-fm-btn {
+            flex: 1;
+            border: none;
+            border-right: 1px solid var(--border);
+            border-radius: 0;
+            background: var(--bg);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--muted);
+            transition: background .1s;
+        }
+        #mob-mode-header .mob-fm-btn:last-child {
+            border-right: none;
+        }
+        #mob-mode-header .mob-fm-btn.active {
+            background: var(--text);
+            color: var(--bg);
+        }
+
+        /* ───── Mobile bottom bar & panel toggle (גודל ורקע כמו השורה העליונה) ───── */
+        #panel-toggle-bar {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 68px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            border-radius: 0;
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 0 16px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--muted);
+            transition: background .1s;
+        }
+        #panel-toggle-bar.active {
+            background: var(--text);
+            color: var(--bg);
+        }
+        #panel-toggle-bar.active span,
+        #panel-toggle-bar.active button {
+            color: var(--bg);
+        }
+        #panel-toggle-bar span {
+            flex: 1;
+            text-align: center;
+        }
+
+        #panel-toggle-btn {
+            display: none
+        }
+
+        /* ───── Responsive breakpoints ───── */
+        @media (max-width: 700px) {
+
+            html,
+            body {
+                overflow: hidden;
+                height: 100%
+            }
+
+            #mob-mode-header {
+                display: flex;
+            }
+
+            #app {
+                flex-direction: column;
+                height: 100dvh;
+                overflow: hidden;
+                padding-top: 48px;
+                box-sizing: border-box;
+            }
+
+            /* Canvas area fills the top */
+            #main {
+                flex: 1 1 auto;
+                min-height: 0
+            }
+
+            /* Panel becomes a sliding drawer from the bottom */
+            #panel {
+                position: fixed;
+                bottom: 68px;
+                left: 0;
+                right: 0;
+                width: 100%;
+                min-width: unset;
+                max-height: 0;
+                overflow: hidden;
+                border-right: none;
+                border-top: 1px solid var(--border);
+                z-index: 90;
+                transition: max-height .35s cubic-bezier(.4, 0, .2, 1)
+            }
+
+            #panel.panel-open {
+                max-height: 40vh;
+                overflow-y: auto;
+                background: transparent;
+                isolation: isolate;
+                color: var(--text);
+            }
+            #panel.panel-open #panel-header h1,
+            #panel.panel-open #panel-header p,
+            #panel.panel-open .sec-label,
+            #panel.panel-open .sl-label,
+            #panel.panel-open .sl-val,
+            #panel.panel-open label,
+            #panel.panel-open input:not([type="range"]),
+            #panel.panel-open .sec-num {
+                color: var(--text);
+            }
+            #panel.panel-open .shape-btn:not(.active),
+            #panel.panel-open .mob-fm-btn:not(.active) {
+                color: var(--text);
+            }
+            #panel.panel-open::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 68px;
+                background: rgba(255, 255, 255, 0.05);
+                -webkit-backdrop-filter: blur(6px);
+                backdrop-filter: blur(6px);
+                z-index: -1;
+                pointer-events: none;
+            }
+            #panel.panel-open > * {
+                position: relative;
+                z-index: 1;
+            }
+            #panel.panel-open #panel-header {
+                background: rgba(255, 255, 255, 0.15);
+            }
+            #panel.panel-open .section {
+                background: rgba(255, 255, 255, 0.1);
+            }
+
+            /* כשהפאנל פתוח – הקנבס נצמד ל-header (Draw / Image / Live), אזור הקנבס רק מעל הפאנל */
+            body.panel-open #main {
+                position: fixed !important;
+                top: 48px !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: calc(68px + 40vh) !important;
+                z-index: 0;
+                height: auto;
+            }
+            body.panel-open #grid-canvas {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+
+            /* Show toggle bar */
+            #panel-toggle-bar {
+                display: flex
+            }
+
+            /* במובייל – בלי כפילות: Snapshot ו-Flip כבר בחוץ */
+            #l-snapshot,
+            #l-flip-cam {
+                display: none !important;
+            }
+
+            /* Larger controls on mobile */
+            .section {
+                padding: 14px 16px
+            }
+
+            #panel-header {
+                padding: 14px 16px 12px
+            }
+
+            #panel-header h1 {
+                font-size: 14px
+            }
+
+            #panel-header p {
+                font-size: 11px
+            }
+
+            .sec-label {
+                font-size: 11px;
+                margin-bottom: 10px
+            }
+
+            #shape-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 6px
+            }
+
+            .shape-btn {
+                padding: 12px 4px;
+                font-size: 11px
+            }
+
+            .sl-label {
+                min-width: 64px;
+                font-size: 11px
+            }
+
+            .sl-val {
+                min-width: 36px;
+                font-size: 11px
+            }
+
+            .slider-row {
+                gap: 10px;
+                margin-bottom: 10px
+            }
+
+            input[type=range]::-webkit-slider-thumb {
+                width: 20px;
+                height: 20px;
+                border-radius: 0
+            }
+
+            .color-row label {
+                font-size: 11px
+            }
+
+            input[type=color] {
+                width: 40px;
+                height: 32px
+            }
+
+            .fm-btn {
+                padding: 12px 6px;
+                font-size: 11px
+            }
+
+            /* במובייל: כפתורי Draw/Image/Live רק ב-header העליון, לא בתפריט */
+            .fill-mode-switcher {
+                display: none
+            }
+
+            .btn {
+                padding: 14px;
+                font-size: 11px
+            }
+
+            .dz-text {
+                font-size: 11px
+            }
+
+            /* Hide export section inside panel on mobile — FAB handles it */
+            .section:has(#dl-both) {
+                display: none
+            }
+        }
+
+        /* ─── Floating Action Button (mobile download / camera flip) ─── */
+        /* ─── Mobile Camera Buttons ─── */
+
+        /* Base: hidden on desktop — square, same stroke as panel */
+        #mob-shutter,
+        #mob-flip,
+        #mob-capture-mode,
+        #mob-download,
+        #mob-ratio {
+            display: none;
+            position: fixed;
+            border-radius: 0;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            box-shadow: 0 3px 12px rgba(0, 0, 0, .2);
+            transition: background .12s, transform .12s;
+            z-index: 85
+        }
+
+        #mob-shutter:active,
+        #mob-flip:active,
+        #mob-capture-mode:active,
+        #mob-download:active,
+        #mob-ratio:active {
+            transform: scale(.88)
+        }
+
+        /* Shutter — גובה 58px, מרכז תחתון */
+        #mob-shutter {
+            width: 58px;
+            height: 58px;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 78px
+        }
+
+        #mob-shutter:active {
+            transform: translateX(-50%) scale(.88)
+        }
+
+        /* Inner square — smaller, centered, with clear gap from outer frame */
+        #mob-shutter::before {
+            content: '';
+            position: absolute;
+            inset: 12px;
+            border-radius: 0;
+            border: 1px solid var(--border)
+        }
+
+        /* Recording state — inner square filled red */
+        #mob-shutter.recording::before {
+            background: #ff2b2b;
+            border-color: #ff2b2b
+        }
+
+        /* Flip camera — small square, bottom-left */
+        #mob-flip {
+            width: 44px;
+            height: 44px;
+            bottom: 86px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0
+        }
+
+        #mob-flip img {
+            display: block;
+            object-fit: contain
+        }
+
+        /* Capture mode (image / video) — to the right of shutter, same row */
+        #mob-capture-mode {
+            display: none;
+            position: fixed;
+            width: 56px;
+            height: 44px;
+            bottom: 86px;
+            left: calc(50% + 42px);
+            transform: translateX(-50%);
+            margin-left: 34px;
+            border-radius: 0;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text);
+            z-index: 85;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+        }
+        #mob-capture-mode:active { transform: translateX(-50%) scale(.95); }
+
+        /* Download — small, bottom-right */
+        #mob-download {
+            width: 44px;
+            height: 44px;
+            bottom: 86px;
+            right: 20px
+        }
+
+        /* Download icon (arrow down) */
+        #mob-download::before {
+            content: '↓';
+            font-size: 20px;
+            line-height: 1;
+            color: var(--border)
+        }
+
+        /* Aspect ratio — top-right, Live only (on mobile below mode header) */
+        #mob-ratio {
+            width: 44px;
+            height: 44px;
+            top: 60px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        #mob-ratio img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+        }
+
+        @media (max-width: 700px) {
+            /* Export section still hidden in panel on mobile */
+            .section:has(#dl-pixels) {
+                display: none
+            }
+        }
+
+        @media (min-width: 701px) and (max-width: 1024px) {
+
+            /* Tablet — narrower panel */
+            #panel {
+                width: 220px;
+                min-width: 200px
+            }
+        }
+
+        /* מסך הזמנה להוספה למסך הבית (מובייל, בפתיחה מהקישור) */
+        #install-prompt {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 1000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        #install-prompt.show { display: flex; }
+        #install-prompt h2 {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        #install-prompt p {
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            max-width: 280px;
+        }
+        #install-prompt .install-btn {
+            padding: 14px 24px;
+            border: 1px solid var(--border);
+            background: var(--text);
+            color: var(--bg);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 10px;
+        }
+        #install-prompt .skip-btn {
+            background: transparent;
+            color: var(--muted);
+            border: none;
+            font-size: 10px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Add to home screen prompt (shown on mobile when opening from link) -->
+    <div id="install-prompt" aria-hidden="true">
+        <h2>Pixel Maker</h2>
+        <p>Add a shortcut to your home screen to open the app from your icon.</p>
+        <button type="button" class="install-btn" id="install-prompt-btn">Add to Home Screen</button>
+        <p id="install-manual-hint" style="display:none; font-size:11px; margin-top:10px; color:var(--text); font-weight:600;"></p>
+        <button type="button" class="skip-btn" id="install-prompt-skip">Continue to app</button>
+    </div>
+    <!-- Mobile top header: mode switch (DRAW / IMAGE / LIVE) -->
+    <div id="mob-mode-header">
+        <button type="button" class="mob-fm-btn active" id="mob-fm-draw">Draw</button>
+        <button type="button" class="mob-fm-btn" id="mob-fm-image">Image</button>
+        <button type="button" class="mob-fm-btn" id="mob-fm-live">Live</button>
+    </div>
+    <!-- Mobile bottom bar -->
+    <div id="panel-toggle-bar">
+        <span>Pixel Maker</span>
+        <button id="panel-toggle-btn" aria-label="Toggle controls">☰</button>
+    </div>
+
+    <!-- Mobile camera controls -->
+    <!-- Shutter: big circle at bottom center -->
+    <button id="mob-shutter" aria-label="Capture"></button>
+    <!-- Aspect ratio: top, Live only -->
+    <button id="mob-ratio" aria-label="Aspect ratio" type="button" style="display:none">
+        <img src="ratio_icon.png" alt="" width="22" height="22">
+    </button>
+    <!-- Camera flip: small circle top-right -->
+    <button id="mob-flip" aria-label="Flip camera" style="display:none">
+        <img src="camera-switch.svg" alt="" width="22" height="22">
+    </button>
+    <!-- Download: small circle bottom-right -->
+    <button id="mob-capture-mode" aria-label="Capture mode" type="button">image</button>
+    <button id="mob-download" aria-label="Download"></button>
+
+    <div id="app">
+        <aside id="panel">
+            <div id="panel-header">
+                <h1>Pixel Maker</h1>
+                <p>make it pixel</p>
+            </div>
+
+            <!-- 01 Shape -->
+            <div class="section">
+                <div class="sec-label"><span class="sec-num">01</span> Cell Shape</div>
+                <div id="shape-grid" style="grid-template-columns:repeat(2,1fr)">
+                    <button class="shape-btn active" data-shape="square">Square</button>
+                    <button class="shape-btn" data-shape="custom" id="btn-custom">Custom Shape</button>
+                </div>
+                <div class="slider-row" style="margin-top:8px">
+                    <span class="sl-label">Rotation</span>
+                    <input type="range" id="d-rotation" min="0" max="359" value="0" />
+                    <span class="sl-val" id="d-rotation-v">0°</span>
+                </div>
+                <div id="custom-controls">
+                    <div id="custom-hint">
+                        <strong>Click</strong> to place points<br />
+                        <strong>Click first point</strong> or Enter to close<br />
+                        <strong>Backspace</strong> to remove last point
+                    </div>
+                    <button class="btn btn-outline" id="btn-clear-shape">Clear Points</button>
+                    <button class="btn btn-fill" id="btn-confirm-shape" disabled>Confirm Shape</button>
+                </div>
+            </div>
+
+            <!-- 02 Grid -->
+            <div class="section">
+                <div class="sec-label"><span class="sec-num">02</span> Grid</div>
+                <div class="slider-row"><span class="sl-label">Columns</span><input type="range" id="d-cols" min="2"
+                        max="200" value="10" /><span class="sl-val" id="d-cols-v">10</span></div>
+                <div class="slider-row"><span class="sl-label">Rows</span><input type="range" id="d-rows" min="2"
+                        max="200" value="10" /><span class="sl-val" id="d-rows-v">10</span></div>
+                <div class="slider-row"><span class="sl-label">Gap</span><input type="range" id="d-gap" min="0" max="20"
+                        value="0" /><span class="sl-val" id="d-gap-v">0</span></div>
+            </div>
+
+            <!-- 03 Fill -->
+            <div class="section">
+                <div class="fill-mode-switcher">
+                    <div class="sec-label"><span class="sec-num">03</span> Fill</div>
+                    <div id="fill-mode" style="display:flex">
+                        <button class="fm-btn active" id="fm-draw" style="flex:1">Draw</button>
+                        <button class="fm-btn" id="fm-image" style="flex:1">Image</button>
+                        <button class="fm-btn" id="fm-live" style="flex:1">Live</button>
+                    </div>
+                </div>
+
+                <!-- Draw options -->
+                <div id="draw-options">
+                    <div class="color-row"><label>Background</label><input type="color" id="d-bg" value="#ffffff" />
+                    </div>
+                    <div class="color-row"><label>Stroke</label><input type="color" id="d-stroke-col" value="#000000" />
+                    </div>
+                    <div class="color-row"><label>Fill</label><input type="color" id="d-fill" value="#000000" /></div>
+                    <div class="slider-row"><span class="sl-label">Brush</span><input type="range" id="d-brush" min="1"
+                            max="5" value="1" /><span class="sl-val" id="d-brush-v">1</span></div>
+                    <!-- Reference image -->
+                    <div
+                        style="margin-top:8px;font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">
+                        Reference</div>
+                    <div id="ref-zone">
+                        <input type="file" id="ref-input" accept="image/*" class="dz-input" />
+                        <div class="dz-text">Drop reference image<br />or click to browse</div>
+                        <div id="ref-name"></div>
+                    </div>
+                    <div class="slider-row"><span class="sl-label">Opacity</span><input type="range" id="ref-opacity"
+                            min="5" max="80" value="30" /><span class="sl-val" id="ref-opacity-v">30%</span></div>
+                    <button class="btn btn-outline" id="btn-clear-ref" style="margin-top:4px">Clear Reference</button>
+                    <div style="margin-top:6px;font-size:8px;color:var(--muted);letter-spacing:.04em">Left click: paint
+                        · Right click: erase</div>
+                </div>
+
+                <!-- Image options -->
+                <div id="image-options" style="display:none">
+                    <div id="drop-zone">
+                        <input type="file" id="file-input" accept="image/*" class="dz-input" />
+                        <div class="dz-text">Drop image here<br />or click to browse</div>
+                        <div id="file-name"></div>
+                    </div>
+                    <div class="slider-row" style="margin-top:6px"><span class="sl-label">Resolution</span><input
+                            type="range" id="i-res" min="4" max="200" value="20" /><span class="sl-val"
+                            id="i-res-v">20</span></div>
+                    <div class="slider-row"><span class="sl-label">Edge Enhance</span><input type="range" id="i-edge"
+                            min="0" max="10" value="0" step="0.5" /><span class="sl-val" id="i-edge-v">0</span></div>
+                    <div class="slider-row"><span class="sl-label">BG Cutoff</span><input type="range" id="i-bg-cut"
+                            min="1" max="255" value="220" /><span class="sl-val" id="i-bg-cut-v">220</span></div>
+                    <div class="slider-row"><span class="sl-label">Split</span><input type="range" id="i-thresh" min="1"
+                            max="255" value="128" /><span class="sl-val" id="i-thresh-v">128</span></div>
+                    <div class="color-row" style="margin-top:6px"><label>Background</label><input type="color" id="i-bg"
+                            value="#ffffff" /></div>
+                    <div class="color-row"><label>Edge color</label><input type="color" id="i-edge-col"
+                            value="#000000" />
+                    </div>
+                    <div class="color-row"><label>Color 1 (dark)</label><input type="color" id="i-fill-col"
+                            value="#000000" />
+                    </div>
+                    <div class="color-row"><label>Color 2 (light)</label><input type="color" id="i-fill-col2"
+                            value="#ffffff" />
+                    </div>
+                    <button class="btn btn-outline" id="i-use-image-colors" style="margin-top:6px">Use image colors</button>
+                </div>
+
+                <!-- Live Camera options -->
+                <div id="live-options" style="display:none">
+                    <div style="font-size:9px;color:var(--muted);margin-bottom:8px;line-height:1.6">Camera opens live —
+                        your image appears on the grid in real time.</div>
+                    <div class="slider-row"><span class="sl-label">Resolution</span><input type="range" id="l-res"
+                            min="4" max="200" value="200" /><span class="sl-val" id="l-res-v">200</span></div>
+                    <div class="slider-row"><span class="sl-label">Edge Enhance</span><input type="range" id="l-edge"
+                            min="0" max="10" value="10" step="0.5" /><span class="sl-val" id="l-edge-v">10</span></div>
+                    <div class="slider-row"><span class="sl-label">BG Cutoff</span><input type="range" id="l-bg-cut"
+                            min="1" max="255" value="255" /><span class="sl-val" id="l-bg-cut-v">255</span></div>
+                    <div class="slider-row"><span class="sl-label">Split</span><input type="range" id="l-thresh" min="1"
+                            max="255" value="132" /><span class="sl-val" id="l-thresh-v">132</span></div>
+                    <!-- Silhouette mode -->
+                    <div
+                        style="margin-top:8px;font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">
+                        Silhouette</div>
+                    <button class="btn btn-outline" id="l-capture-bg">Capture Background</button>
+                    <div id="l-bg-status" style="font-size:8px;color:var(--muted);margin-top:3px;margin-bottom:4px">No
+                        background captured</div>
+                    <div class="slider-row"><span class="sl-label">Sensitivity</span><input type="range" id="l-bg-diff"
+                            min="5" max="120" value="30" /><span class="sl-val" id="l-bg-diff-v">30</span></div>
+                    <button class="btn btn-outline" id="l-clear-bg" style="margin-bottom:8px">Clear Background</button>
+                    <!-- end silhouette -->
+                    <div class="color-row" style="margin-top:4px"><label>Background</label><input type="color" id="l-bg"
+                            value="#ffffff" /></div>
+                    <div class="color-row"><label>Color 1 (dark)</label><input type="color" id="l-fill"
+                            value="#000000" /></div>
+                    <div class="color-row"><label>Color 2 (light)</label><input type="color" id="l-fill2"
+                            value="#888888" /></div>
+                    <div class="color-row" style="margin-top:4px">
+                        <label>Mirror</label>
+                        <input type="checkbox" id="l-mirror" checked style="width:18px;height:18px;cursor:pointer" />
+                    </div>
+                    <button class="btn btn-outline" id="l-snapshot" style="margin-top:8px">Snapshot to Grid</button>
+                    <button class="btn btn-outline" id="l-flip-cam" style="margin-top:5px">Flip Camera
+                        (Front/Back)</button>
+                </div>
+            </div>
+
+            <!-- 04 Export -->
+            <div class="section">
+                <div class="sec-label"><span class="sec-num">04</span> Export</div>
+                <button class="btn btn-fill" id="dl-pixels">Download</button>
+                <button class="btn btn-outline" id="btn-clear">Clear All</button>
+            </div>
+        </aside>
+
+        <main id="main">
+            <canvas id="grid-canvas"></canvas>
+            <canvas id="shape-editor"></canvas>
+            <div id="editor-status" style="display:none">Place points — click first point or Enter to close</div>
+        </main>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════
+        //  SHAPE PATH HELPER
+        // ═══════════════════════════════════════════════════
+        function tracePath(ctx, cx, cy, rx, ry, shape, customPts) {
+            ctx.beginPath();
+            switch (shape) {
+                case 'square': ctx.rect(cx - rx, cy - ry, rx * 2, ry * 2); break;
+                case 'circle': { const r = Math.min(rx, ry); ctx.arc(cx, cy, r, 0, Math.PI * 2); break; }
+                case 'diamond': ctx.moveTo(cx, cy - ry); ctx.lineTo(cx + rx, cy); ctx.lineTo(cx, cy + ry); ctx.lineTo(cx - rx, cy); ctx.closePath(); break;
+                case 'triangle': ctx.moveTo(cx, cy - ry); ctx.lineTo(cx + rx, cy + ry); ctx.lineTo(cx - rx, cy + ry); ctx.closePath(); break;
+                case 'hexagon': { const r = Math.min(rx, ry); for (let i = 0; i < 6; i++) { const a = (Math.PI / 180) * (60 * i - 30); ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a)); } ctx.closePath(); break; }
+                case 'cross': { const tx = rx * .36, ty = ry * .36; ctx.moveTo(cx - tx, cy - ry); ctx.lineTo(cx + tx, cy - ry); ctx.lineTo(cx + tx, cy - ty); ctx.lineTo(cx + rx, cy - ty); ctx.lineTo(cx + rx, cy + ty); ctx.lineTo(cx + tx, cy + ty); ctx.lineTo(cx + tx, cy + ry); ctx.lineTo(cx - tx, cy + ry); ctx.lineTo(cx - tx, cy + ty); ctx.lineTo(cx - rx, cy + ty); ctx.lineTo(cx - rx, cy - ty); ctx.lineTo(cx - tx, cy - ty); ctx.closePath(); break; }
+                case 'rounded-sq': ctx.roundRect(cx - rx, cy - ry, rx * 2, ry * 2, Math.min(rx, ry) * 0.35); break;
+                case 'pill': { const r = Math.min(rx, ry); const pw = r * 0.52; ctx.arc(cx, cy - r + pw, pw, Math.PI, 0); ctx.arc(cx, cy + r - pw, pw, 0, Math.PI); ctx.closePath(); break; }
+                case 'ellipse': ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); break;
+                case 'custom':
+                    if (customPts && customPts.length >= 3) {
+                        ctx.moveTo(cx + customPts[0].x * rx, cy + customPts[0].y * ry);
+                        for (let i = 1; i < customPts.length; i++) {
+                            const prev = customPts[i - 1], curr = customPts[i];
+                            const cp1x = prev.cpOut ? cx + prev.cpOut.x * rx : cx + prev.x * rx;
+                            const cp1y = prev.cpOut ? cy + prev.cpOut.y * ry : cy + prev.y * ry;
+                            const cp2x = curr.cpIn ? cx + curr.cpIn.x * rx : cx + curr.x * rx;
+                            const cp2y = curr.cpIn ? cy + curr.cpIn.y * ry : cy + curr.y * ry;
+                            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, cx + curr.x * rx, cy + curr.y * ry);
+                        }
+                        const _last = customPts[customPts.length - 1], _first = customPts[0];
+                        const cl1x = _last.cpOut ? cx + _last.cpOut.x * rx : cx + _last.x * rx;
+                        const cl1y = _last.cpOut ? cy + _last.cpOut.y * ry : cy + _last.y * ry;
+                        const cl2x = _first.cpIn ? cx + _first.cpIn.x * rx : cx + _first.x * rx;
+                        const cl2y = _first.cpIn ? cy + _first.cpIn.y * ry : cy + _first.y * ry;
+                        ctx.bezierCurveTo(cl1x, cl1y, cl2x, cl2y, cx + _first.x * rx, cy + _first.y * ry);
+                        ctx.closePath();
+                    }
+                    break;
+            }
+        }
+
+        function hexToRgba(hex, a) { const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${a})`; }
+
+        // ═══════════════════════════════════════════════════
+        //  STATE  — cells[r][c] = string color | null (empty)
+        // ═══════════════════════════════════════════════════
+        const state = {
+            shape: 'square', cols: 10, rows: 10, gap: 0, strokeW: 0.5,
+            bg: '#ffffff', strokeCol: '#000000', fillCol: '#000000',
+            brushSize: 1, rotation: 0,
+            cells: [], hoverR: -1, hoverC: -1,
+            painting: false, erasing: false,
+            mode: 'draw',
+            // image mode
+            srcImage: null, imgRes: 20, imgBg: '#ffffff', imgStrokeCol: '#000000', imgFillCol: '#000000',
+            imgThreshold: 128, imgBgCut: 220, imgFillCol2: '#ffffff', imgEdge: 0,
+            useImageColors: true,
+            // reference image (draw mode)
+            refImage: null, refOpacity: 0.3,
+            // custom shape
+            customPts: [], editorMode: false,
+            hideGrid: false,
+            captureMode: 'image',
+            exportRatio: null,
+        };
+
+        const UNDO_LIMIT = 50;
+        let undoStack = [];
+
+        function resetCells() {
+            state.cells = Array.from({ length: state.rows }, () => new Array(state.cols).fill(null));
+            undoStack = [];
+        }
+        resetCells();
+
+        function pushUndo() {
+            undoStack.push(state.cells.map(r => r.slice()));
+            if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  GRID CANVAS
+        // ═══════════════════════════════════════════════════
+        const gridCanvas = document.getElementById('grid-canvas');
+        const gctx = gridCanvas.getContext('2d');
+
+
+        // Returns cell layout: {cw, ch, ox, oy} — always square cells, centered in canvas
+        function cellLayout(W, H) {
+            const gap = state.gap;
+            const byW = (W - gap * (state.cols - 1)) / state.cols;
+            const byH = (H - gap * (state.rows - 1)) / state.rows;
+            const cs = Math.max(1, Math.min(byW, byH));
+            const gw = state.cols * cs + (state.cols - 1) * gap;
+            const gh = state.rows * cs + (state.rows - 1) * gap;
+            return { cw: cs, ch: cs, ox: (W - gw) / 2, oy: (H - gh) / 2 };
+        }
+
+        function drawGridToContext(ctx, W, H) {
+            const { cw, ch, ox, oy } = cellLayout(W, H);
+            const gap = state.gap;
+            ctx.fillStyle = state.bg; ctx.fillRect(0, 0, W, H);
+            if (state.refImage && state.mode === 'draw') {
+                ctx.globalAlpha = state.refOpacity;
+                ctx.drawImage(state.refImage, 0, 0, W, H);
+                ctx.globalAlpha = 1;
+            }
+            const rx0 = cw / 2 * .92, ry0 = ch / 2 * .92;
+            const rotRad = state.rotation * Math.PI / 180;
+            for (let row = 0; row < state.rows; row++) {
+                for (let col = 0; col < state.cols; col++) {
+                    const cx = ox + col * (cw + gap) + cw / 2;
+                    const cy = oy + row * (ch + gap) + ch / 2;
+                    const cellColor = state.cells[row][col];
+                    const hovered = (row === state.hoverR && col === state.hoverC && state.mode === 'draw');
+                    if (state.shape === 'custom' && state.customPts.length < 3) continue;
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(rotRad);
+                    ctx.translate(-cx, -cy);
+                    tracePath(ctx, cx, cy, rx0, ry0, state.shape, state.customPts);
+                    if (cellColor !== null) {
+                        ctx.fillStyle = cellColor; ctx.fill();
+                    } else if (hovered) {
+                        ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fill();
+                    }
+                    if (state.mode === 'draw' && !state.hideGrid) {
+                        ctx.strokeStyle = state.strokeCol; ctx.lineWidth = state.strokeW; ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            }
+        }
+
+        const LIVE_COVER_BASE = 1080;
+        // מקור אמת יחיד ליחס: הקנבס (liveCoverCanvas) מוגדר כאן בלבד. היצוא = העתקה של הקנבס.
+        // 9:16 = פורטרט מלא (רוחב 1080, גובה 1920). אם הקנבס 9:16 – היצוא 9:16.
+        var LIVE_EXPORT_DIMENSIONS = {
+            '9:16': { w: 1080, h: 1920 },
+            '4:5': { w: 1080, h: 1350 },
+            '1:1': { w: 1080, h: 1080 },
+            '3:4': { w: 1080, h: 1440 },
+            '16:9': { w: 1920, h: 1080 }
+        };
+        let liveCoverCanvas = null;
+        let liveCoverLastRatio = null;
+
+        function renderGrid() {
+            const m = document.getElementById('main');
+            const isLive = state.mode === 'live';
+            var W, H;
+            if (isLive) {
+                const isMobile = window.innerWidth <= 700;
+                if (isMobile) {
+                    document.body.classList.add('live-fullscreen');
+                    if (document.body.classList.contains('panel-open')) {
+                        W = m.clientWidth;
+                        H = m.clientHeight;
+                    } else {
+                        W = window.innerWidth;
+                        H = window.innerHeight;
+                    }
+                } else {
+                    // Desktop: הקנבס חי בתוך main, הפאנל נשאר גלוי בצד
+                    document.body.classList.remove('live-fullscreen');
+                    gridCanvas.style.position = '';
+                    gridCanvas.style.left = '';
+                    gridCanvas.style.top = '';
+                    gridCanvas.style.width = '';
+                    gridCanvas.style.height = '';
+                    W = m.clientWidth;
+                    H = m.clientHeight;
+                }
+            } else {
+                document.body.classList.remove('live-fullscreen');
+                gridCanvas.style.position = '';
+                gridCanvas.style.left = '';
+                gridCanvas.style.top = '';
+                gridCanvas.style.width = '';
+                gridCanvas.style.height = '';
+                W = m.clientWidth;
+                H = m.clientHeight;
+            }
+
+            if (isLive) {
+                var dim = LIVE_EXPORT_DIMENSIONS[liveState.aspectRatio] || LIVE_EXPORT_DIMENSIONS['9:16'];
+                var cw = dim.w, ch = dim.h;
+                if (!liveCoverCanvas || liveCoverLastRatio !== liveState.aspectRatio) {
+                    liveCoverCanvas = document.createElement('canvas');
+                    liveCoverLastRatio = liveState.aspectRatio;
+                }
+                liveCoverCanvas.width = cw;
+                liveCoverCanvas.height = ch;
+                const coverCtx = liveCoverCanvas.getContext('2d');
+                drawGridToContext(coverCtx, cw, ch);
+                gridCanvas.width = W;
+                gridCanvas.height = H;
+                gctx.fillStyle = state.bg;
+                gctx.fillRect(0, 0, W, H);
+                var scale = Math.max(W / cw, H / ch);
+                var dw = cw * scale, dh = ch * scale;
+                gctx.drawImage(liveCoverCanvas, (W - dw) / 2, (H - dh) / 2, dw, dh);
+                return;
+            }
+
+            gridCanvas.width = W;
+            gridCanvas.height = H;
+            drawGridToContext(gctx, W, H);
+        }
+
+        // ── Mouse (grid) ───────────────────────────────────
+        function hitCell(e) {
+            const rect = gridCanvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+            const { cw, ch, ox, oy } = cellLayout(gridCanvas.width, gridCanvas.height);
+            const gap = state.gap;
+            const lx = mx - ox, ly = my - oy;
+            const col = Math.floor(lx / (cw + gap)), row = Math.floor(ly / (ch + gap));
+            if (row < 0 || row >= state.rows || col < 0 || col >= state.cols) return null;
+            if ((lx - col * (cw + gap)) > cw || (ly - row * (ch + gap)) > ch) return null;
+            return { row, col };
+        }
+
+        function paintBrush(rc) {
+            const b = Math.floor(state.brushSize / 2);
+            for (let dr = -b; dr <= b; dr++) {
+                for (let dc = -b; dc <= b; dc++) {
+                    const r2 = rc.row + dr, c2 = rc.col + dc;
+                    if (r2 >= 0 && r2 < state.rows && c2 >= 0 && c2 < state.cols)
+                        state.cells[r2][c2] = state.erasing ? null : state.fillCol;
+                }
+            }
+        }
+
+        gridCanvas.addEventListener('contextmenu', e => e.preventDefault());
+        gridCanvas.addEventListener('mousemove', e => {
+            if (state.mode !== 'draw') return;
+            const rc = hitCell(e), nr = rc?.row ?? -1, nc = rc?.col ?? -1;
+            if (nr !== state.hoverR || nc !== state.hoverC) {
+                state.hoverR = nr; state.hoverC = nc;
+                if (state.painting && rc) paintBrush(rc);
+                renderGrid();
+            }
+        });
+        gridCanvas.addEventListener('mouseleave', () => { state.hoverR = -1; state.hoverC = -1; state.painting = false; renderGrid(); });
+        gridCanvas.addEventListener('mousedown', e => {
+            if (state.mode !== 'draw') return;
+            e.preventDefault();
+            const rc = hitCell(e); if (!rc) return;
+            pushUndo();
+            state.erasing = (e.button === 2); // right click = erase
+            paintBrush(rc); state.painting = true; renderGrid();
+        });
+        window.addEventListener('mouseup', () => {
+            state.painting = false;
+            if (editorDragging) { editorDragging = null; editorCanvas.style.cursor = 'crosshair'; if (state.editorMode) renderEditor(); }
+        });
+        window.addEventListener('resize', () => {
+            if (!state.editorMode) renderGrid(); else renderEditor();
+            if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
+        });
+
+        // ── Keyboard shortcuts ─────────────────────────────
+        document.addEventListener('keydown', e => {
+            // Undo
+            if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !state.editorMode) {
+                e.preventDefault();
+                if (undoStack.length > 0) { state.cells = undoStack.pop(); renderGrid(); }
+                return;
+            }
+            if (!state.editorMode) return;
+            if (e.key === 'Enter' && editorPts.length >= 3 && !shapeClosed) closeAndConfirmReady();
+            if (e.key === 'Backspace' && !shapeClosed) { editorPts.pop(); renderEditor(); }
+            if (e.key === 'Escape') exitEditorMode();
+        });
+
+        // ═══════════════════════════════════════════════════
+        //  SHAPE EDITOR
+        // ═══════════════════════════════════════════════════
+        const editorCanvas = document.getElementById('shape-editor');
+        const ectx = editorCanvas.getContext('2d');
+        let editorPts = [], editorMouse = null, shapeClosed = false;
+        let editorDragStart = null, editorIsDragging = false, editorPendingHandle = null;
+        let editorDragging = null; // {type:'anchor'|'cpIn'|'cpOut', ptIndex:number}
+        const CLOSE_RADIUS = 12;
+        const DRAG_THRESHOLD = 5;
+        const EDIT_HIT = 10;
+
+        function distPt(a, b) { const dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx * dx + dy * dy); }
+        function hitTestEditor(pos) {
+            for (let i = 0; i < editorPts.length; i++) {
+                const p = editorPts[i];
+                if (p.cpIn && distPt(pos, p.cpIn) < EDIT_HIT) return { type: 'cpIn', ptIndex: i };
+                if (p.cpOut && distPt(pos, p.cpOut) < EDIT_HIT) return { type: 'cpOut', ptIndex: i };
+            }
+            for (let i = 0; i < editorPts.length; i++) {
+                if (distPt(pos, editorPts[i]) < EDIT_HIT) return { type: 'anchor', ptIndex: i };
+            }
+            return null;
+        }
+
+        function drawEditorBezier(pts, closed) {
+            if (!pts.length) return;
+            ectx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) {
+                const prev = pts[i - 1], curr = pts[i];
+                const cp1 = prev.cpOut || prev, cp2 = curr.cpIn || curr;
+                ectx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, curr.x, curr.y);
+            }
+            if (closed && pts.length >= 2) {
+                const last = pts[pts.length - 1];
+                const cp1 = last.cpOut || last, cp2 = pts[0].cpIn || pts[0];
+                ectx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, pts[0].x, pts[0].y);
+            }
+        }
+
+        function setEditorSize() {
+            const m = document.getElementById('main');
+            const sz = Math.min(m.clientWidth - 60, m.clientHeight - 60, 420);
+            editorCanvas.width = sz; editorCanvas.height = sz;
+        }
+
+        function renderEditor() {
+            setEditorSize();
+            const sz = editorCanvas.width;
+            ectx.clearRect(0, 0, sz, sz);
+            ectx.fillStyle = '#fff'; ectx.fillRect(0, 0, sz, sz);
+            ectx.strokeStyle = '#e0e0e0'; ectx.lineWidth = .5;
+            const step = sz / 8;
+            for (let i = 1; i < 8; i++) {
+                ectx.beginPath(); ectx.moveTo(i * step, 0); ectx.lineTo(i * step, sz); ectx.stroke();
+                ectx.beginPath(); ectx.moveTo(0, i * step); ectx.lineTo(sz, i * step); ectx.stroke();
+            }
+            ectx.strokeStyle = '#ccc'; ectx.lineWidth = 1; ectx.strokeRect(0, 0, sz, sz);
+
+            const pendingPt = editorDragStart ? {
+                x: editorDragStart.x, y: editorDragStart.y,
+                cpIn: editorPendingHandle ? editorPendingHandle.cpIn : null,
+                cpOut: editorPendingHandle ? editorPendingHandle.cpOut : null
+            } : null;
+            const allPts = pendingPt ? [...editorPts, pendingPt] : editorPts;
+            if (!allPts.length) return;
+
+            // Closed filled shape
+            if (shapeClosed && editorPts.length >= 3) {
+                ectx.beginPath(); drawEditorBezier(editorPts, true);
+                ectx.fillStyle = 'rgba(0,0,0,.08)'; ectx.fill();
+                ectx.strokeStyle = '#000'; ectx.lineWidth = 1.5; ectx.stroke();
+            }
+            // Open bezier path
+            if (!shapeClosed && allPts.length > 1) {
+                ectx.beginPath(); drawEditorBezier(allPts, false);
+                ectx.strokeStyle = '#000'; ectx.lineWidth = 1.5; ectx.stroke();
+            }
+            // Dashed preview to mouse
+            if (!shapeClosed && editorMouse && !editorDragStart && editorPts.length > 0) {
+                const lastPt = editorPts[editorPts.length - 1];
+                const cp1 = lastPt.cpOut || lastPt;
+                ectx.strokeStyle = '#999'; ectx.lineWidth = 1; ectx.setLineDash([4, 4]);
+                ectx.beginPath();
+                ectx.moveTo(lastPt.x, lastPt.y);
+                ectx.bezierCurveTo(cp1.x, cp1.y, editorMouse.x, editorMouse.y, editorMouse.x, editorMouse.y);
+                ectx.stroke(); ectx.setLineDash([]);
+            }
+            // Handle lines & dots for placed points
+            editorPts.forEach(p => {
+                [p.cpIn, p.cpOut].forEach(cp => {
+                    if (!cp) return;
+                    ectx.strokeStyle = '#0066ff'; ectx.lineWidth = 1;
+                    ectx.beginPath(); ectx.moveTo(p.x, p.y); ectx.lineTo(cp.x, cp.y); ectx.stroke();
+                    ectx.beginPath(); ectx.arc(cp.x, cp.y, 3.5, 0, Math.PI * 2);
+                    ectx.fillStyle = '#0066ff'; ectx.fill();
+                });
+            });
+            // Handle preview while dragging
+            if (pendingPt) {
+                [pendingPt.cpIn, pendingPt.cpOut].forEach(cp => {
+                    if (!cp) return;
+                    ectx.strokeStyle = '#0066ff'; ectx.lineWidth = 1;
+                    ectx.beginPath(); ectx.moveTo(pendingPt.x, pendingPt.y); ectx.lineTo(cp.x, cp.y); ectx.stroke();
+                    ectx.beginPath(); ectx.arc(cp.x, cp.y, 3.5, 0, Math.PI * 2);
+                    ectx.fillStyle = '#0066ff'; ectx.fill();
+                });
+            }
+            // Anchor squares (like Illustrator)
+            editorPts.forEach((p, i) => {
+                const isFirst = i === 0;
+                const nearFirst = !shapeClosed && editorMouse && !editorDragStart && isFirst && distToFirst(editorMouse) < CLOSE_RADIUS;
+                ectx.beginPath(); ectx.rect(p.x - 4, p.y - 4, 8, 8);
+                ectx.fillStyle = nearFirst ? '#e84545' : '#fff'; ectx.fill();
+                ectx.strokeStyle = nearFirst ? '#e84545' : '#000'; ectx.lineWidth = 1.5; ectx.stroke();
+            });
+            if (pendingPt) {
+                ectx.beginPath(); ectx.rect(pendingPt.x - 4, pendingPt.y - 4, 8, 8);
+                ectx.fillStyle = '#fff'; ectx.fill();
+                ectx.strokeStyle = '#000'; ectx.lineWidth = 1.5; ectx.stroke();
+            }
+        }
+
+        function distToFirst(pt) { if (!editorPts.length) return Infinity; const dx = pt.x - editorPts[0].x, dy = pt.y - editorPts[0].y; return Math.sqrt(dx * dx + dy * dy); }
+        function editorPos(e) { const rect = editorCanvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
+        function normalizePoints(pts) {
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            pts.forEach(p => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); });
+            const ncx = (minX + maxX) / 2, ncy = (minY + maxY) / 2, ext = Math.max(maxX - minX, maxY - minY) / 2 || 1;
+            return pts.map(p => ({
+                x: (p.x - ncx) / ext, y: (p.y - ncy) / ext,
+                cpIn: p.cpIn ? { x: (p.cpIn.x - ncx) / ext, y: (p.cpIn.y - ncy) / ext } : null,
+                cpOut: p.cpOut ? { x: (p.cpOut.x - ncx) / ext, y: (p.cpOut.y - ncy) / ext } : null
+            }));
+        }
+        function closeAndConfirmReady() {
+            if (editorPts.length < 3) return;
+            shapeClosed = true;
+            document.getElementById('btn-confirm-shape').disabled = false;
+            updateEditorStatus('Shape closed. Press Confirm to apply to grid.');
+            renderEditor();
+        }
+        function closeEditorAndApply() { state.customPts = normalizePoints(editorPts); exitEditorMode(); renderGrid(); }
+        function enterEditorMode() {
+            state.editorMode = true; editorPts = []; shapeClosed = false; editorMouse = null;
+            editorDragStart = null; editorIsDragging = false; editorPendingHandle = null; editorDragging = null;
+            document.getElementById('btn-confirm-shape').disabled = true;
+            gridCanvas.style.display = 'none'; editorCanvas.style.display = 'block';
+            document.getElementById('editor-status').style.display = 'block';
+            updateEditorStatus('Click = sharp point  ·  Click+drag = smooth curve  ·  Click first point to close');
+            renderEditor();
+        }
+        function exitEditorMode() {
+            state.editorMode = false; editorCanvas.style.display = 'none';
+            document.getElementById('editor-status').style.display = 'none';
+            gridCanvas.style.display = 'block';
+        }
+        function updateEditorStatus(msg) { document.getElementById('editor-status').textContent = msg; }
+
+        editorCanvas.addEventListener('mousemove', e => {
+            editorMouse = editorPos(e);
+            if (editorDragging) {
+                const p = editorPts[editorDragging.ptIndex];
+                if (editorDragging.type === 'anchor') {
+                    const dx = editorMouse.x - p.x, dy = editorMouse.y - p.y;
+                    if (p.cpIn) { p.cpIn.x += dx; p.cpIn.y += dy; }
+                    if (p.cpOut) { p.cpOut.x += dx; p.cpOut.y += dy; }
+                    p.x = editorMouse.x; p.y = editorMouse.y;
+                } else if (editorDragging.type === 'cpIn') {
+                    p.cpIn = { x: editorMouse.x, y: editorMouse.y };
+                } else {
+                    p.cpOut = { x: editorMouse.x, y: editorMouse.y };
+                }
+                renderEditor(); return;
+            }
+            // Cursor feedback
+            const hit = hitTestEditor(editorMouse);
+            editorCanvas.style.cursor = hit ? 'grab' : 'crosshair';
+            if (editorDragStart) {
+                const dx = editorMouse.x - editorDragStart.x, dy = editorMouse.y - editorDragStart.y;
+                if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+                    editorIsDragging = true;
+                    editorPendingHandle = {
+                        cpOut: { x: editorMouse.x, y: editorMouse.y },
+                        cpIn: { x: 2 * editorDragStart.x - editorMouse.x, y: 2 * editorDragStart.y - editorMouse.y }
+                    };
+                }
+            }
+            renderEditor();
+        });
+        editorCanvas.addEventListener('mouseleave', () => {
+            if (!editorDragStart && !editorDragging) editorMouse = null;
+            renderEditor();
+        });
+        editorCanvas.addEventListener('mousedown', e => {
+            e.preventDefault();
+            const pos = editorPos(e);
+            const hit = hitTestEditor(pos);
+            if (hit) {
+                editorDragging = hit;
+                editorCanvas.style.cursor = 'grabbing';
+                return;
+            }
+            if (shapeClosed) return;
+            editorDragStart = pos;
+            editorIsDragging = false; editorPendingHandle = null;
+            renderEditor();
+        });
+        editorCanvas.addEventListener('mouseup', e => {
+            if (editorDragging) {
+                editorDragging = null;
+                editorCanvas.style.cursor = 'crosshair';
+                renderEditor(); return;
+            }
+            if (shapeClosed) return;
+            const pos = editorDragStart || editorPos(e);
+            if (editorPts.length >= 3 && distToFirst(pos) < CLOSE_RADIUS && !editorIsDragging) {
+                editorDragStart = null; editorIsDragging = false; editorPendingHandle = null;
+                closeAndConfirmReady(); return;
+            }
+            editorPts.push({
+                x: pos.x, y: pos.y,
+                cpIn: editorPendingHandle ? editorPendingHandle.cpIn : null,
+                cpOut: editorPendingHandle ? editorPendingHandle.cpOut : null
+            });
+            editorDragStart = null; editorIsDragging = false; editorPendingHandle = null;
+            renderEditor();
+        });
+        // Double-click an anchor → toggle smooth handles
+        editorCanvas.addEventListener('dblclick', e => {
+            const pos = editorPos(e);
+            let hitIdx = -1;
+            for (let i = 0; i < editorPts.length; i++) {
+                if (distPt(pos, editorPts[i]) < EDIT_HIT) { hitIdx = i; break; }
+            }
+            if (hitIdx === -1) return;
+            const p = editorPts[hitIdx];
+            if (p.cpIn === null && p.cpOut === null) {
+                // Generate handles from tangent between neighbours
+                const n = editorPts.length;
+                const prev = editorPts[(hitIdx - 1 + n) % n];
+                const next = editorPts[(hitIdx + 1) % n];
+                let tx = next.x - prev.x, ty = next.y - prev.y;
+                const tlen = Math.sqrt(tx * tx + ty * ty) || 1;
+                tx /= tlen; ty /= tlen;
+                const hLen = Math.max(30, Math.min(distPt(p, prev), distPt(p, next)) * 0.35);
+                p.cpOut = { x: p.x + tx * hLen, y: p.y + ty * hLen };
+                p.cpIn = { x: p.x - tx * hLen, y: p.y - ty * hLen };
+            } else {
+                // Remove handles → sharp corner
+                p.cpIn = null; p.cpOut = null;
+            }
+            renderEditor();
+        });
+
+        document.getElementById('btn-clear-shape').addEventListener('click', () => {
+            editorPts = []; shapeClosed = false;
+            editorDragStart = null; editorIsDragging = false; editorPendingHandle = null; editorDragging = null;
+            document.getElementById('btn-confirm-shape').disabled = true;
+            updateEditorStatus('Click = sharp point  ·  Click+drag = smooth curve  ·  Click first point to close');
+            renderEditor();
+        });
+        document.getElementById('btn-confirm-shape').addEventListener('click', closeEditorAndApply);
+
+        // ═══════════════════════════════════════════════════
+        //  CONTROLS WIRING
+        // ═══════════════════════════════════════════════════
+
+        // Shape buttons
+        document.querySelectorAll('.shape-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active'); state.shape = btn.dataset.shape;
+                document.getElementById('custom-controls').style.display = state.shape === 'custom' ? 'block' : 'none';
+                if (state.shape === 'custom') { enterEditorMode(); }
+                else { if (state.editorMode) exitEditorMode(); renderGrid(); }
+            });
+        });
+
+        // Grid sliders
+        function bindSlider(id, valId, key, reset, suffix) {
+            const sl = document.getElementById(id), vl = document.getElementById(valId);
+            sl.addEventListener('input', () => {
+                var newVal = +sl.value;
+                if (key === 'cols' || key === 'rows') { if (state[key] !== newVal) state.exportRatio = null; }
+                state[key] = newVal; vl.textContent = sl.value + (suffix || '');
+                if (reset) { resetCells(); }
+                if (state.mode === 'image' && state.srcImage) applyImage(); else renderGrid();
+            });
+        }
+        bindSlider('d-cols', 'd-cols-v', 'cols', true);
+        bindSlider('d-rows', 'd-rows-v', 'rows', true);
+        bindSlider('d-gap', 'd-gap-v', 'gap', false);
+
+        // Draw color pickers
+        document.getElementById('d-bg').addEventListener('input', e => { state.bg = e.target.value; renderGrid(); });
+        document.getElementById('d-stroke-col').addEventListener('input', e => { state.strokeCol = e.target.value; renderGrid(); });
+        document.getElementById('d-fill').addEventListener('input', e => { state.fillCol = e.target.value; renderGrid(); });
+        document.getElementById('d-brush').addEventListener('input', function () {
+            state.brushSize = +this.value;
+            document.getElementById('d-brush-v').textContent = this.value;
+        });
+        // Rotation slider
+        document.getElementById('d-rotation').addEventListener('input', function () {
+            state.rotation = +this.value;
+            document.getElementById('d-rotation-v').textContent = this.value + '°';
+            renderGrid();
+        });
+
+        // Reference image
+        document.getElementById('ref-input').addEventListener('change', e => loadRef(e.target.files[0]));
+        document.getElementById('ref-zone').addEventListener('dragover', e => { e.preventDefault(); });
+        document.getElementById('ref-zone').addEventListener('drop', e => { e.preventDefault(); loadRef(e.dataTransfer.files[0]); });
+        function loadRef(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = ev => { const img = new Image(); img.onload = () => { state.refImage = img; document.getElementById('ref-name').textContent = file.name; renderGrid(); }; img.src = ev.target.result; };
+            reader.readAsDataURL(file);
+        }
+        document.getElementById('ref-opacity').addEventListener('input', function () {
+            state.refOpacity = +this.value / 100;
+            document.getElementById('ref-opacity-v').textContent = this.value + '%';
+            renderGrid();
+        });
+        document.getElementById('btn-clear-ref').addEventListener('click', () => {
+            state.refImage = null;
+            document.getElementById('ref-name').textContent = '';
+            document.getElementById('ref-input').value = '';
+            renderGrid();
+        });
+
+        // Fill mode switch – תמיד עוברים דרך switchToMode כדי לעצור מצלמה אם צריך
+        document.getElementById('fm-draw').addEventListener('click', () => switchToMode('draw'));
+        document.getElementById('fm-image').addEventListener('click', () => switchToMode('image'));
+        document.getElementById('fm-live').addEventListener('click', () => switchToMode('live'));
+        document.getElementById('mob-fm-draw').addEventListener('click', () => switchToMode('draw'));
+        document.getElementById('mob-fm-image').addEventListener('click', () => switchToMode('image'));
+        document.getElementById('mob-fm-live').addEventListener('click', () => switchToMode('live'));
+
+        // Image upload
+        const dropZone = document.getElementById('drop-zone');
+        document.getElementById('file-input').addEventListener('change', e => loadFile(e.target.files[0]));
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); loadFile(e.dataTransfer.files[0]); });
+        function loadFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            const reader = new FileReader();
+            reader.onload = ev => { const img = new Image(); img.onload = () => { state.srcImage = img; document.getElementById('file-name').textContent = file.name; applyImage(); }; img.src = ev.target.result; };
+            reader.readAsDataURL(file);
+        }
+
+        // Image-mode color pickers (all call renderGrid directly for instant feedback)
+        document.getElementById('i-res').addEventListener('input', function () {
+            state.imgRes = +this.value; document.getElementById('i-res-v').textContent = this.value;
+            if (state.srcImage) applyImage();
+        });
+        document.getElementById('i-bg-cut').addEventListener('input', function () {
+            state.imgBgCut = +this.value; document.getElementById('i-bg-cut-v').textContent = this.value;
+            if (state.srcImage) applyImage();
+        });
+        document.getElementById('i-thresh').addEventListener('input', function () {
+            state.imgThreshold = +this.value; document.getElementById('i-thresh-v').textContent = this.value;
+            if (state.srcImage) applyImage();
+        });
+        document.getElementById('i-bg').addEventListener('input', e => { state.imgBg = e.target.value; state.bg = e.target.value; renderGrid(); });
+        document.getElementById('i-edge-col').addEventListener('input', e => { state.imgStrokeCol = e.target.value; state.useImageColors = false; if (state.srcImage) applyImage(); else renderGrid(); });
+        document.getElementById('i-fill-col').addEventListener('input', e => { state.imgFillCol = e.target.value; state.useImageColors = false; if (state.srcImage) applyImage(); else renderGrid(); });
+        document.getElementById('i-fill-col2').addEventListener('input', e => { state.imgFillCol2 = e.target.value; state.useImageColors = false; if (state.srcImage) applyImage(); else renderGrid(); });
+        document.getElementById('i-use-image-colors').addEventListener('click', () => { state.useImageColors = true; if (state.srcImage) applyImage(); });
+        document.getElementById('i-edge').addEventListener('input', function () {
+            state.imgEdge = +this.value; document.getElementById('i-edge-v').textContent = this.value;
+            if (state.srcImage) applyImage();
+        });
+
+        // Apply image → cells
+        let offC = null, offX = null;
+        function sampleImg(src, cols, rows) {
+            if (!offC) { offC = document.createElement('canvas'); offX = offC.getContext('2d'); }
+            offC.width = cols; offC.height = rows; offX.clearRect(0, 0, cols, rows); offX.drawImage(src, 0, 0, cols, rows);
+            return offX.getImageData(0, 0, cols, rows).data;
+        }
+
+        // ── Edge Enhance (unsharp mask convolution) ────────────────────────
+        // Sharpens luminance by subtracting a fraction of neighbours.
+        // Kernel (strength a): [0,-a,0, -a,1+4a,-a, 0,-a,0]
+        // Returns a new Float32Array of luminance values, same length as rows*cols.
+        function edgeEnhanceLum(px, cols, rows, amount) {
+            const lum = new Float32Array(rows * cols);
+            // First compute luminance
+            for (let i = 0; i < rows * cols; i++) {
+                lum[i] = 0.299 * px[i * 4] + 0.587 * px[i * 4 + 1] + 0.114 * px[i * 4 + 2];
+            }
+            if (amount === 0) return lum;
+            const a = amount * 0.12; // scale so slider 0-10 gives gentle-to-strong
+            const out = new Float32Array(rows * cols);
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const idx = r * cols + c;
+                    const ctr = lum[idx];
+                    const top = r > 0 ? lum[(r - 1) * cols + c] : ctr;
+                    const bot = r < rows - 1 ? lum[(r + 1) * cols + c] : ctr;
+                    const lft = c > 0 ? lum[r * cols + c - 1] : ctr;
+                    const rht = c < cols - 1 ? lum[r * cols + c + 1] : ctr;
+                    out[idx] = Math.min(255, Math.max(0, (1 + 4 * a) * ctr - a * (top + bot + lft + rht)));
+                }
+            }
+            return out;
+        }
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => {
+                const h = Math.max(0, Math.min(255, Math.round(x))).toString(16);
+                return h.length === 1 ? '0' + h : h;
+            }).join('');
+        }
+
+        function applyImage() {
+            if (!state.srcImage) return;
+            const src = state.srcImage, N = state.imgRes;
+            const aspect = src.width / src.height;
+            const imgCols = Math.round(N * aspect), imgRows = N;
+            state.cols = imgCols; state.rows = imgRows;
+            document.getElementById('d-cols').value = imgCols; document.getElementById('d-cols-v').textContent = imgCols;
+            document.getElementById('d-rows').value = imgRows; document.getElementById('d-rows-v').textContent = imgRows;
+            const bgCut = state.imgBgCut;
+            const thresh = state.imgThreshold;
+            const fillColor = state.imgFillCol;
+            const fillColor2 = state.imgFillCol2;
+            const edgeColor = state.imgStrokeCol;
+            const px = sampleImg(src, imgCols, imgRows);
+            const lum = edgeEnhanceLum(px, imgCols, imgRows, state.imgEdge);
+            state.cells = Array.from({ length: imgRows }, (_, r) =>
+                Array.from({ length: imgCols }, (_, c) => {
+                    const i = r * imgCols + c;
+                    const hasAlpha = px[i * 4 + 3] > 30;
+                    const l = lum[i];
+                    if (!hasAlpha) return null;
+                    if (state.useImageColors) {
+                        if (l >= bgCut) return null;
+                        const R = px[i * 4], G = px[i * 4 + 1], B = px[i * 4 + 2];
+                        return rgbToHex(R, G, B);
+                    }
+                    // Non-image-colors mode:
+                    // 1) אם יש Edge Enhance > 0 – נזהה פיקסלי "קצה" לפי קונטרסט וניתן להם את Edge color
+                    let isEdgePixel = false;
+                    if (state.imgEdge > 0) {
+                        let maxDiff = 0;
+                        if (r > 0) {
+                            const lt = Math.abs(l - lum[(r - 1) * imgCols + c]);
+                            if (lt > maxDiff) maxDiff = lt;
+                        }
+                        if (r < imgRows - 1) {
+                            const lb = Math.abs(l - lum[(r + 1) * imgCols + c]);
+                            if (lb > maxDiff) maxDiff = lb;
+                        }
+                        if (c > 0) {
+                            const ll = Math.abs(l - lum[r * imgCols + c - 1]);
+                            if (ll > maxDiff) maxDiff = ll;
+                        }
+                        if (c < imgCols - 1) {
+                            const lr = Math.abs(l - lum[r * imgCols + c + 1]);
+                            if (lr > maxDiff) maxDiff = lr;
+                        }
+                        const edgeDiffThresh = 5 + state.imgEdge * 5; // יותר חזק → יותר קל לתפוס כקצה
+                        if (maxDiff >= edgeDiffThresh) isEdgePixel = true;
+                    }
+                    if (isEdgePixel) return edgeColor;
+                    if (l >= bgCut) return null;
+                    return l < thresh ? fillColor : fillColor2;
+                })
+            );
+            state.bg = state.imgBg; state.strokeCol = state.imgStrokeCol; state.fillCol = state.imgFillCol;
+            renderGrid();
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  EXPORT
+        // ═══════════════════════════════════════════════════
+        const EXPORT_MIN_PX = 2400;
+
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 700;
+
+        function dl(cnv, name) {
+            cnv.toBlob(blob => {
+                if (!blob) return;
+                // On mobile, try Web Share API first (native share sheet)
+                if (isMobile && navigator.canShare) {
+                    const file = new File([blob], name, { type: 'image/png' });
+                    if (navigator.canShare({ files: [file] })) {
+                        navigator.share({ files: [file], title: name }).catch(() => {
+                            // Share cancelled or failed — fall back to opening in new tab
+                            openBlobInTab(blob);
+                        });
+                        return;
+                    }
+                }
+                // Desktop or share not supported: standard download
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.download = name;
+                a.href = url;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+            }, 'image/png');
+        }
+
+        function openBlobInTab(blob) {
+            const url = URL.createObjectURL(blob);
+            const w = window.open(url, '_blank');
+            if (!w) {
+                // Popup blocked — use location fallback
+                window.location.href = url;
+            }
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        }
+
+        function renderHiRes(includeFill, includeHighlight, includeStroke, solidBg) {
+            const gap = state.gap;
+            const longerSide = Math.max(state.cols, state.rows);
+            const scale = Math.max(1, Math.ceil(EXPORT_MIN_PX / longerSide));
+            const cs = scale, strokeW = state.strokeW * scale, gapS = gap * scale;
+            const W = state.cols * cs + (state.cols - 1) * gapS, H = state.rows * cs + (state.rows - 1) * gapS;
+            const r = cs / 2 * .92;
+            const rotRad = state.rotation * Math.PI / 180;
+            const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
+            const tc = tmp.getContext('2d');
+            if (solidBg) { tc.fillStyle = state.bg; tc.fillRect(0, 0, W, H); }
+            for (let row = 0; row < state.rows; row++) {
+                for (let col = 0; col < state.cols; col++) {
+                    const cx = col * (cs + gapS) + cs / 2, cy = row * (cs + gapS) + cs / 2;
+                    const cellColor = state.cells[row][col];
+                    tc.save();
+                    tc.translate(cx, cy);
+                    tc.rotate(rotRad);
+                    tc.translate(-cx, -cy);
+                    tracePath(tc, cx, cy, r, r, state.shape, state.customPts);
+                    if (cellColor !== null && includeFill) {
+                        tc.fillStyle = cellColor; tc.fill();
+                    }
+                    if (includeStroke) { tc.strokeStyle = state.strokeCol; tc.lineWidth = strokeW; tc.stroke(); }
+                    tc.restore();
+                }
+            }
+            return tmp;
+        }
+
+        // Returns { w, h } for canvas: w = horizontal pixels, h = vertical. Portrait (9:16) = narrow×tall.
+        function getExportDimensionsForRatio(ratioKey) {
+            var k = String(ratioKey || '9:16').trim();
+            switch (k) {
+                case '9:16': return { w: 1080, h: 1920 };
+                case '4:5': return { w: 1536, h: 1920 };
+                case '1:1': return { w: 1920, h: 1920 };
+                case '16:9': return { w: 1920, h: 1080 };
+                case '3:4': return { w: 1440, h: 1920 };
+                default: return { w: 1080, h: 1920 };
+            }
+        }
+
+        function renderHiResForRatio(ratioKey, includeFill, solidBg) {
+            var dim = getExportDimensionsForRatio(ratioKey);
+            var cnv = document.createElement('canvas');
+            cnv.width = dim.w;
+            cnv.height = dim.h;
+            var ctx = cnv.getContext('2d');
+            if (solidBg) { ctx.fillStyle = state.bg; ctx.fillRect(0, 0, dim.w, dim.h); }
+            drawGridToContext(ctx, dim.w, dim.h);
+            return cnv;
+        }
+
+        // Download = הקנבס עצמו: ב-Live העתקה של liveCoverCanvas, ב-Draw יחס הגריד
+        function downloadPixels() {
+            var cnv;
+            if (state.mode === 'live' && liveCoverCanvas && liveCoverCanvas.width > 0 && liveCoverCanvas.height > 0) {
+                cnv = document.createElement('canvas');
+                cnv.width = liveCoverCanvas.width;
+                cnv.height = liveCoverCanvas.height;
+                cnv.getContext('2d').drawImage(liveCoverCanvas, 0, 0);
+            } else {
+                cnv = document.createElement('canvas');
+                var ctx = cnv.getContext('2d');
+                var cols = state.cols, rows = state.rows;
+                var longSide = 1920;
+                var ratio = cols / rows;
+                if (ratio >= 1) {
+                    cnv.width = longSide;
+                    cnv.height = Math.round(longSide / ratio);
+                } else {
+                    cnv.width = Math.round(longSide * ratio);
+                    cnv.height = longSide;
+                }
+                ctx.fillStyle = state.bg;
+                ctx.fillRect(0, 0, cnv.width, cnv.height);
+                drawGridToContext(ctx, cnv.width, cnv.height);
+            }
+            dl(cnv, `grid_pixels_${Date.now()}.png`);
+        }
+        document.getElementById('dl-pixels').addEventListener('click', downloadPixels);
+        document.getElementById('btn-clear').addEventListener('click', () => { resetCells(); renderGrid(); });
+
+        // ═══════════════════════════════════════════════════
+        //  LIVE CAMERA
+        // ═══════════════════════════════════════════════════
+        const liveVideo = document.createElement('video');
+        liveVideo.autoplay = true; liveVideo.muted = true; liveVideo.playsInline = true;
+        liveVideo.style.display = 'none'; document.body.appendChild(liveVideo);
+
+        const liveState = {
+            stream: null, rafId: null,
+            res: 200, threshold: 132, bgCut: 255, edge: 10,
+            fillCol: '#000000', fillCol2: '#888888', strokeCol: '#000000', bgCol: '#ffffff',
+            mirror: true,
+            bgPixels: null, bgCols: 0, bgRows: 0, bgDiff: 30,
+            facingMode: 'user',
+            aspectRatio: '9:16', // '9:16' | '4:5' | '1:1' | '3:4' | '16:9'
+        };
+
+        function getAspectRatioValue(ratioKey) {
+            if (ratioKey === '1:1') return 1;
+            if (ratioKey === '3:4') return 3 / 4;
+            if (ratioKey === '4:5') return 4 / 5;
+            if (ratioKey === '16:9') return 16 / 9;
+            return 9 / 16; // '9:16' default
+        }
+
+        // Same as LIVE_EXPORT_DIMENSIONS – export = exactly what’s on screen
+        function getLiveCoverDimensions(ratioKey) {
+            var k = String(ratioKey || '9:16').trim();
+            return LIVE_EXPORT_DIMENSIONS[k] || LIVE_EXPORT_DIMENSIONS['9:16'];
+        }
+
+        const liveOffC = document.createElement('canvas');
+        const liveOffX = liveOffC.getContext('2d');
+
+        function sampleLiveFrame() {
+            if (!liveVideo.videoWidth) return null;
+            const N = liveState.res;
+            const vw = liveVideo.videoWidth, vh = liveVideo.videoHeight;
+            const targetRatio = getAspectRatioValue(liveState.aspectRatio);
+            // פורטרט (9:16, 4:5, 1:1, 3:4). רזולוציה אחידה: כמות תאים ~N² בכל היחסים (cols×rows ≈ N²).
+            const sqrtR = Math.sqrt(targetRatio);
+            const cols = Math.max(2, Math.round(N * sqrtR));
+            const rows = Math.max(2, Math.round(N / sqrtR));
+            liveOffC.width = cols; liveOffC.height = rows;
+            const scale = Math.min(cols / vw, rows / vh);
+            const drawW = vw * scale, drawH = vh * scale;
+            const dstX = (cols - drawW) / 2, dstY = (rows - drawH) / 2;
+            liveOffX.fillStyle = liveState.bgCol;
+            liveOffX.fillRect(0, 0, cols, rows);
+            if (liveState.mirror) {
+                liveOffX.save();
+                liveOffX.translate(dstX + drawW, dstY);
+                liveOffX.scale(-1, 1);
+                liveOffX.drawImage(liveVideo, 0, 0, vw, vh, 0, 0, drawW, drawH);
+                liveOffX.restore();
+            } else {
+                liveOffX.drawImage(liveVideo, 0, 0, vw, vh, dstX, dstY, drawW, drawH);
+            }
+            return { px: liveOffX.getImageData(0, 0, cols, rows).data, cols, rows };
+        }
+
+        function liveLoop() {
+            const frame = sampleLiveFrame();
+            if (frame) {
+                const { px, cols, rows } = frame;
+                // Update grid dimensions if changed
+                if (state.cols !== cols || state.rows !== rows) {
+                    state.cols = cols; state.rows = rows;
+                    state.cells = Array.from({ length: rows }, () => new Array(cols).fill(null));
+                }
+                const bgPx = liveState.bgPixels;
+                const bgCols = liveState.bgCols;
+                const bgRows = liveState.bgRows;
+                const useSilhouette = bgPx !== null && bgCols === cols && bgRows === rows;
+
+                const lum = edgeEnhanceLum(px, cols, rows, liveState.edge);
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const idx = r * cols + c;
+                        const l = lum[idx];
+                        const i = idx * 4;
+                        if (useSilhouette) {
+                            // Background subtraction: is this pixel foreground?
+                            const dr = Math.abs(px[i] - bgPx[i]);
+                            const dg = Math.abs(px[i + 1] - bgPx[i + 1]);
+                            const db = Math.abs(px[i + 2] - bgPx[i + 2]);
+                            const diff = (dr + dg + db) / 3;
+                            if (diff <= liveState.bgDiff) { state.cells[r][c] = null; }
+                            else { state.cells[r][c] = l < liveState.threshold ? liveState.fillCol : liveState.fillCol2; }
+                        } else {
+                            const alpha = px[i + 3];
+                            // Pixels brighter than BG Cutoff → background (null)
+                            if (alpha <= 30 || l >= liveState.bgCut) { state.cells[r][c] = null; }
+                            else { state.cells[r][c] = l < liveState.threshold ? liveState.fillCol : liveState.fillCol2; }
+                        }
+                    }
+                }
+                state.bg = liveState.bgCol;
+                state.strokeCol = liveState.strokeCol;
+                state.fillCol = liveState.fillCol;
+                renderGrid();
+            }
+            liveState.rafId = requestAnimationFrame(liveLoop);
+        }
+
+        async function startCamera() {
+            try {
+                liveState.stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: liveState.facingMode }, audio: false
+                });
+                liveVideo.srcObject = liveState.stream;
+                await liveVideo.play();
+                liveState.rafId = requestAnimationFrame(liveLoop);
+            } catch (err) {
+                alert('Camera error: ' + err.message);
+                switchToMode('draw');
+            }
+        }
+
+        function stopCamera() {
+            if (liveState.rafId) { cancelAnimationFrame(liveState.rafId); liveState.rafId = null; }
+            if (liveState.stream) { liveState.stream.getTracks().forEach(t => t.stop()); liveState.stream = null; }
+            liveVideo.srcObject = null;
+        }
+
+        function switchToMode(mode) {
+            if (state.mode === 'live') {
+                stopCamera();
+                if (mode !== 'live') {
+                    document.body.classList.remove('live-fullscreen');
+                    gridCanvas.style.position = '';
+                    gridCanvas.style.left = '';
+                    gridCanvas.style.top = '';
+                    gridCanvas.style.width = '';
+                    gridCanvas.style.height = '';
+                }
+            }
+            state.mode = mode;
+            document.querySelectorAll('.fm-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.mob-fm-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('draw-options').style.display = 'none';
+            document.getElementById('image-options').style.display = 'none';
+            document.getElementById('live-options').style.display = 'none';
+            if (mode === 'draw') {
+                document.getElementById('fm-draw').classList.add('active');
+                document.getElementById('mob-fm-draw').classList.add('active');
+                document.getElementById('draw-options').style.display = '';
+                gridCanvas.style.cursor = 'crosshair';
+                state.hideGrid = false;
+                if (window.innerWidth <= 700) {
+                    var pan = document.getElementById('panel');
+                    var bar = document.getElementById('panel-toggle-bar');
+                    if (pan && bar) {
+                        pan.classList.add('panel-open');
+                        bar.classList.add('active');
+                        document.body.classList.add('panel-open');
+                    }
+                }
+                renderGrid();
+            } else if (mode === 'image') {
+                state.hideGrid = false;
+                document.getElementById('fm-image').classList.add('active');
+                document.getElementById('mob-fm-image').classList.add('active');
+                document.getElementById('image-options').style.display = '';
+                gridCanvas.style.cursor = 'default';
+                if (state.srcImage) applyImage(); else renderGrid();
+            } else if (mode === 'live') {
+                document.getElementById('fm-live').classList.add('active');
+                document.getElementById('mob-fm-live').classList.add('active');
+                document.getElementById('live-options').style.display = '';
+                gridCanvas.style.cursor = 'default';
+                state.hideGrid = false;
+                startCamera();
+            }
+            if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
+        }
+
+        // Live controls
+        document.getElementById('l-res').addEventListener('input', function () {
+            liveState.res = +this.value; document.getElementById('l-res-v').textContent = this.value;
+        });
+        document.getElementById('l-bg-cut').addEventListener('input', function () {
+            liveState.bgCut = +this.value; document.getElementById('l-bg-cut-v').textContent = this.value;
+        });
+        document.getElementById('l-thresh').addEventListener('input', function () {
+            liveState.threshold = +this.value; document.getElementById('l-thresh-v').textContent = this.value;
+        });
+        document.getElementById('l-edge').addEventListener('input', function () {
+            liveState.edge = +this.value; document.getElementById('l-edge-v').textContent = this.value;
+        });
+        document.getElementById('l-bg').addEventListener('input', e => { liveState.bgCol = e.target.value; });
+        document.getElementById('l-fill').addEventListener('input', e => { liveState.fillCol = e.target.value; });
+        document.getElementById('l-fill2').addEventListener('input', e => { liveState.fillCol2 = e.target.value; });
+        document.getElementById('l-mirror').addEventListener('change', function () {
+            liveState.mirror = this.checked;
+        });
+        // Silhouette controls
+        document.getElementById('l-bg-diff').addEventListener('input', function () {
+            liveState.bgDiff = +this.value;
+            document.getElementById('l-bg-diff-v').textContent = this.value;
+        });
+        document.getElementById('l-capture-bg').addEventListener('click', () => {
+            const frame = sampleLiveFrame();
+            if (!frame) { alert('Camera not ready yet.'); return; }
+            liveState.bgPixels = frame.px.slice();
+            liveState.bgCols = frame.cols;
+            liveState.bgRows = frame.rows;
+            document.getElementById('l-bg-status').textContent = '✓ Background captured';
+            document.getElementById('l-bg-status').style.color = 'var(--text)';
+        });
+        document.getElementById('l-clear-bg').addEventListener('click', () => {
+            liveState.bgPixels = null;
+            document.getElementById('l-bg-status').textContent = 'No background captured';
+            document.getElementById('l-bg-status').style.color = 'var(--muted)';
+        });
+        document.getElementById('l-snapshot').addEventListener('click', () => {
+            state.exportRatio = liveState.aspectRatio || '9:16';
+            var cnv;
+            if (liveCoverCanvas && liveCoverCanvas.width > 0 && liveCoverCanvas.height > 0) {
+                cnv = document.createElement('canvas');
+                cnv.width = liveCoverCanvas.width;
+                cnv.height = liveCoverCanvas.height;
+                cnv.getContext('2d').drawImage(liveCoverCanvas, 0, 0);
+            } else {
+                var dim = LIVE_EXPORT_DIMENSIONS[state.exportRatio] || LIVE_EXPORT_DIMENSIONS['9:16'];
+                cnv = document.createElement('canvas');
+                cnv.width = dim.w;
+                cnv.height = dim.h;
+                var ctx = cnv.getContext('2d');
+                ctx.fillStyle = state.bg;
+                ctx.fillRect(0, 0, dim.w, dim.h);
+                drawGridToContext(ctx, dim.w, dim.h);
+            }
+            dl(cnv, 'pixelmaker_capture_' + Date.now() + '.png');
+            state.hideGrid = true;
+            stopCamera();
+            switchToMode('draw');
+            state.hideGrid = true;
+            var dc = document.getElementById('d-cols'), dr = document.getElementById('d-rows');
+            dc.value = state.cols; dc.max = Math.max(40, state.cols);
+            dr.value = state.rows; dr.max = Math.max(40, state.rows);
+            document.getElementById('d-cols-v').textContent = state.cols;
+            document.getElementById('d-rows-v').textContent = state.rows;
+            renderGrid();
+        });
+
+        // ═══════════════════════════════════════════════════
+        //  MOBILE: Panel toggle
+        // ═══════════════════════════════════════════════════
+        const panelToggleBar = document.getElementById('panel-toggle-bar');
+        const panel = document.getElementById('panel');
+        const mobShutter = document.getElementById('mob-shutter');
+        const mobFlip = document.getElementById('mob-flip');
+        const mobDl = document.getElementById('mob-download');
+        const mobRatio = document.getElementById('mob-ratio');
+
+        // Mobile FAB visibility by mode:
+        // - Live: show shutter + flip + ratio + download
+        // - Draw/Image: show download only
+        function updateMobileButtonsForMode() {
+            const isSmall = window.innerWidth <= 700;
+            var modeBtn = document.getElementById('mob-capture-mode');
+            if (!isSmall) {
+                mobShutter.style.display = 'none';
+                mobFlip.style.display = 'none';
+                mobDl.style.display = 'none';
+                if (mobRatio) mobRatio.style.display = 'none';
+                if (modeBtn) modeBtn.style.display = 'none';
+                return;
+            }
+
+            const panelOpen = panel.classList.contains('panel-open');
+            if (panelOpen) {
+                mobShutter.style.display = 'none';
+                mobFlip.style.display = 'none';
+                mobDl.style.display = 'none';
+                if (mobRatio) mobRatio.style.display = 'none';
+                if (modeBtn) modeBtn.style.display = 'none';
+                return;
+            }
+
+            // Download תמיד זמין במובייל
+            mobDl.style.display = 'block';
+
+            if (state.mode === 'live') {
+                mobShutter.style.display = 'block';
+                mobFlip.style.display = 'flex';
+                if (mobRatio) {
+                    mobRatio.style.display = 'flex';
+                    mobRatio.setAttribute('aria-label', 'Aspect ratio ' + liveState.aspectRatio);
+                    mobRatio.title = liveState.aspectRatio;
+                }
+                if (modeBtn) {
+                    modeBtn.style.display = 'flex';
+                    modeBtn.textContent = state.captureMode === 'video' ? 'video' : 'image';
+                }
+            } else {
+                mobShutter.style.display = 'none';
+                mobFlip.style.display = 'none';
+                if (mobRatio) mobRatio.style.display = 'none';
+                if (modeBtn) modeBtn.style.display = 'none';
+            }
+        }
+
+        panelToggleBar.addEventListener('click', () => {
+            panel.classList.toggle('panel-open');
+            var isOpen = panel.classList.contains('panel-open');
+            panelToggleBar.classList.toggle('active', isOpen);
+            document.body.classList.toggle('panel-open', isOpen);
+            updateMobileButtonsForMode();
+            if (!state.editorMode) renderGrid();
+        });
+
+        // ═══════════════════════════════════════════════════
+        //  MOBILE: Camera buttons
+        // ═══════════════════════════════════════════════════
+
+        // Camera flip
+        function flipCamera() {
+            if (state.mode !== 'live') return;
+            liveState.facingMode = liveState.facingMode === 'user' ? 'environment' : 'user';
+            liveState.mirror = (liveState.facingMode === 'user');
+            var mirrorCb = document.getElementById('l-mirror');
+            if (mirrorCb) mirrorCb.checked = liveState.mirror;
+            stopCamera();
+            startCamera();
+        }
+        mobFlip.addEventListener('click', flipCamera);
+        document.getElementById('l-flip-cam').addEventListener('click', flipCamera);
+
+        function cycleAspectRatio() {
+            if (liveState.aspectRatio === '9:16') liveState.aspectRatio = '4:5';
+            else if (liveState.aspectRatio === '4:5') liveState.aspectRatio = '1:1';
+            else if (liveState.aspectRatio === '1:1') liveState.aspectRatio = (isMobile ? '9:16' : '16:9');
+            else liveState.aspectRatio = '9:16';
+            liveCoverCanvas = null;
+            liveCoverLastRatio = null;
+            if (mobRatio) {
+                mobRatio.setAttribute('aria-label', 'Aspect ratio ' + liveState.aspectRatio);
+                mobRatio.title = liveState.aspectRatio;
+            }
+        }
+        if (mobRatio) mobRatio.addEventListener('click', cycleAspectRatio);
+
+        var mobCaptureModeBtn = document.getElementById('mob-capture-mode');
+        if (mobCaptureModeBtn) mobCaptureModeBtn.addEventListener('click', function () {
+            state.captureMode = state.captureMode === 'image' ? 'video' : 'image';
+            this.textContent = state.captureMode;
+        });
+
+        var liveVideoRecorder = null;
+        var recordedChunks = [];
+        var liveRecordCanvas = null;
+        var liveRecordCtx = null;
+        var liveRecordInterval = null;
+        var LIVE_RECORD_FPS = 30;
+
+        function stopRecordInterval() {
+            if (liveRecordInterval) {
+                clearInterval(liveRecordInterval);
+                liveRecordInterval = null;
+            }
+        }
+
+        function toggleVideoRecording() {
+            if (!liveState.stream) return;
+            if (liveVideoRecorder && liveVideoRecorder.state === 'recording') {
+                stopRecordInterval();
+                liveVideoRecorder.stop();
+                mobShutter.classList.remove('recording');
+                liveRecordCanvas = null;
+                liveRecordCtx = null;
+                return;
+            }
+            recordedChunks = [];
+            var recordRatio = liveState.aspectRatio;
+            var dim = getLiveCoverDimensions(recordRatio);
+            liveRecordCanvas = document.createElement('canvas');
+            liveRecordCanvas.width = dim.w;
+            liveRecordCanvas.height = dim.h;
+            liveRecordCtx = liveRecordCanvas.getContext('2d');
+            drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
+            var mime = 'video/webm';
+            if (MediaRecorder.isTypeSupported('video/mp4')) mime = 'video/mp4';
+            else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) mime = 'video/webm;codecs=vp9';
+            var stream = liveRecordCanvas.captureStream(LIVE_RECORD_FPS);
+            try {
+                liveVideoRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5000000 });
+            } catch (e) {
+                liveVideoRecorder = new MediaRecorder(stream);
+            }
+            liveVideoRecorder.ondataavailable = function (e) { if (e.data.size) recordedChunks.push(e.data); };
+            liveVideoRecorder.onstop = function () {
+                stopRecordInterval();
+                mobShutter.classList.remove('recording');
+                liveRecordCanvas = null;
+                liveRecordCtx = null;
+                if (recordedChunks.length === 0) return;
+                var rec = liveVideoRecorder;
+                var mimeType = rec.mimeType || 'video/webm';
+                var ext = mimeType.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
+                var blob = new Blob(recordedChunks, { type: mimeType });
+                var fileName = 'pixelmaker_' + Date.now() + '.' + ext;
+                var file = new File([blob], fileName, { type: mimeType });
+                var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({ files: [file], title: 'Pixel Maker Video' }).then(function () {
+                        liveVideoRecorder = null;
+                    }).catch(function () {
+                        downloadVideoFile(blob, fileName);
+                        liveVideoRecorder = null;
+                    });
+                } else {
+                    downloadVideoFile(blob, fileName);
+                    liveVideoRecorder = null;
+                }
+            };
+            function downloadVideoFile(blob, fileName) {
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+                setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+            }
+            liveVideoRecorder.start(1000 / LIVE_RECORD_FPS);
+            liveRecordInterval = setInterval(function () {
+                if (liveRecordCanvas && liveRecordCtx && liveVideoRecorder && liveVideoRecorder.state === 'recording') {
+                    drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
+                }
+            }, 1000 / LIVE_RECORD_FPS);
+            mobShutter.classList.add('recording');
+        }
+
+        // Shutter: in live mode → snapshot (image) or start/stop video; in draw mode → no-op
+        mobShutter.addEventListener('click', () => {
+            if (state.mode === 'live') {
+                if (state.captureMode === 'video') {
+                    toggleVideoRecording();
+                } else {
+                    state.exportRatio = liveState.aspectRatio || '9:16';
+                    var cnv;
+                    if (liveCoverCanvas && liveCoverCanvas.width > 0 && liveCoverCanvas.height > 0) {
+                        cnv = document.createElement('canvas');
+                        cnv.width = liveCoverCanvas.width;
+                        cnv.height = liveCoverCanvas.height;
+                        cnv.getContext('2d').drawImage(liveCoverCanvas, 0, 0);
+                    } else {
+                        var dim = LIVE_EXPORT_DIMENSIONS[state.exportRatio] || LIVE_EXPORT_DIMENSIONS['9:16'];
+                        cnv = document.createElement('canvas');
+                        cnv.width = dim.w;
+                        cnv.height = dim.h;
+                        var ctx = cnv.getContext('2d');
+                        ctx.fillStyle = state.bg;
+                        ctx.fillRect(0, 0, dim.w, dim.h);
+                        drawGridToContext(ctx, dim.w, dim.h);
+                    }
+                    dl(cnv, 'pixelmaker_capture_' + Date.now() + '.png');
+                    state.hideGrid = true;
+                    stopCamera();
+                    switchToMode('draw');
+                    state.hideGrid = true;
+                    var dc = document.getElementById('d-cols'), dr = document.getElementById('d-rows');
+                    dc.value = state.cols; dc.max = Math.max(40, state.cols);
+                    dr.value = state.rows; dr.max = Math.max(40, state.rows);
+                    document.getElementById('d-cols-v').textContent = state.cols;
+                    document.getElementById('d-rows-v').textContent = state.rows;
+                    renderGrid();
+                }
+            }
+        });
+
+        // Download: always downloads the pixel fill image
+        mobDl.addEventListener('click', downloadPixels);
+
+
+        // ═══════════════════════════════════════════════════
+        //  TOUCH SUPPORT (paint on canvas)
+        // ═══════════════════════════════════════════════════
+        function touchToMouse(touch) {
+            // Construct a minimal mouse-like event object from a touch
+            return { clientX: touch.clientX, clientY: touch.clientY, button: 0 };
+        }
+
+        gridCanvas.addEventListener('touchstart', e => {
+            if (state.mode !== 'draw') return;
+            e.preventDefault();
+            const me = touchToMouse(e.touches[0]);
+            const rc = hitCell(me);
+            if (!rc) return;
+            pushUndo();
+            state.erasing = false;
+            paintBrush(rc);
+            state.painting = true;
+            renderGrid();
+        }, { passive: false });
+
+        gridCanvas.addEventListener('touchmove', e => {
+            if (state.mode !== 'draw') return;
+            e.preventDefault();
+            const me = touchToMouse(e.touches[0]);
+            const rc = hitCell(me);
+            const nr = rc?.row ?? -1, nc = rc?.col ?? -1;
+            if (nr !== state.hoverR || nc !== state.hoverC) {
+                state.hoverR = nr; state.hoverC = nc;
+                if (state.painting && rc) paintBrush(rc);
+                renderGrid();
+            }
+        }, { passive: false });
+
+        gridCanvas.addEventListener('touchend', e => {
+            e.preventDefault();
+            state.painting = false;
+            state.hoverR = -1; state.hoverC = -1;
+            renderGrid();
+        }, { passive: false });
+
+        // ═══════════════════════════════════════════════════
+        //  INIT
+        // ═══════════════════════════════════════════════════
+        gridCanvas.style.cursor = 'crosshair';
+        renderGrid();
+        if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
+
+        // PWA: register service worker for installability
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+
+        // Add to home screen prompt — shown on mobile when opening from link (not when already launched from icon)
+        (function () {
+            const installEl = document.getElementById('install-prompt');
+            const installBtn = document.getElementById('install-prompt-btn');
+            const skipBtn = document.getElementById('install-prompt-skip');
+            const manualHint = document.getElementById('install-manual-hint');
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true;
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 700;
+            let deferredPrompt = null;
+
+            window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                deferredPrompt = e;
+            });
+
+            function showManualHint() {
+                if (!manualHint) return;
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    manualHint.textContent = 'In Safari: tap Share (□↑), then "Add to Home Screen", then Add.';
+                } else {
+                    manualHint.textContent = 'Use your browser menu: ⋮ → "Add to Home screen" or "Install app".';
+                }
+                manualHint.style.display = 'block';
+            }
+
+            function showInstallSteps() {
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                    alert('To add Pixel Maker to your home screen:\n\n1. Tap the Share button (□ with arrow) at the bottom of Safari.\n2. Scroll down and tap "Add to Home Screen".\n3. Tap "Add".');
+                } else {
+                    showManualHint();
+                }
+            }
+
+            if (installBtn) installBtn.addEventListener('click', function () {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(function (r) {
+                        if (r.outcome === 'accepted') installEl.classList.remove('show');
+                        deferredPrompt = null;
+                    });
+                } else {
+                    showInstallSteps();
+                }
+            });
+            if (skipBtn) skipBtn.addEventListener('click', function () {
+                installEl.classList.remove('show');
+                try { sessionStorage.setItem('pixelmaker-skip-install', '1'); } catch (_) {}
+            });
+
+            if (installEl && isMobile && !isStandalone) {
+                try {
+                    if (sessionStorage.getItem('pixelmaker-skip-install')) return;
+                } catch (_) {}
+                installEl.setAttribute('aria-hidden', 'false');
+                installEl.classList.add('show');
+                if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) showManualHint();
+            }
+        })();
+    </script>
+</body>
+
+</html>
