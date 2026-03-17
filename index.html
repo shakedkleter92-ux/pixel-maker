@@ -1640,10 +1640,8 @@
             const gap = state.gap;
             const byW = (W - gap * (state.cols - 1)) / state.cols;
             const byH = (H - gap * (state.rows - 1)) / state.rows;
-            // Live: fill the whole canvas area (cover) to avoid big margins (all breakpoints).
-            // Draw/Image: keep contain so user grid stays fully visible.
-            const cover = state.mode === 'live';
-            const cs = Math.max(1, cover ? Math.max(byW, byH) : Math.min(byW, byH));
+            // Keep full grid visible (contain) — no crop, no stretch.
+            const cs = Math.max(1, Math.min(byW, byH));
             const gw = state.cols * cs + (state.cols - 1) * gap;
             const gh = state.rows * cs + (state.rows - 1) * gap;
             return { cw: cs, ch: cs, ox: (W - gw) / 2, oy: (H - gh) / 2 };
@@ -1743,11 +1741,22 @@
             }
 
             if (isLive) {
-                // Live behaves like a camera preview ("aspect fill"): what you see is what you export.
-                // So the offscreen cover canvas matches the visible area exactly (no fixed ratios -> no white margins).
-                var cw = Math.max(1, W);
-                var ch = Math.max(1, H);
-                var coverKey = 'screen:' + cw + 'x' + ch;
+                // Live preview should NOT stretch and should NOT crop.
+                // We render a live canvas at the camera aspect ratio, then letterbox it into the visible area.
+                var ar = 1;
+                if (liveVideo && liveVideo.videoWidth && liveVideo.videoHeight) ar = liveVideo.videoWidth / liveVideo.videoHeight;
+                else if (W > 0 && H > 0) ar = W / H;
+
+                var cw, ch;
+                if ((W / H) >= ar) {
+                    ch = Math.max(1, H);
+                    cw = Math.max(1, Math.round(ch * ar));
+                } else {
+                    cw = Math.max(1, W);
+                    ch = Math.max(1, Math.round(cw / ar));
+                }
+
+                var coverKey = 'live:' + cw + 'x' + ch;
                 if (!liveCoverCanvas || liveCoverLastRatio !== coverKey) {
                     liveCoverCanvas = document.createElement('canvas');
                     liveCoverLastRatio = coverKey;
@@ -1756,11 +1765,14 @@
                 liveCoverCanvas.height = ch;
                 const coverCtx = liveCoverCanvas.getContext('2d');
                 drawGridToContext(coverCtx, cw, ch);
+
                 gridCanvas.width = W;
                 gridCanvas.height = H;
                 gctx.fillStyle = state.bg;
                 gctx.fillRect(0, 0, W, H);
-                gctx.drawImage(liveCoverCanvas, 0, 0, W, H);
+                gctx.imageSmoothingEnabled = false;
+                gctx.drawImage(liveCoverCanvas, Math.round((W - cw) / 2), Math.round((H - ch) / 2), cw, ch);
+                gctx.imageSmoothingEnabled = true;
                 return;
             }
 
