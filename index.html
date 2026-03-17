@@ -2903,6 +2903,8 @@
 
         const liveOffC = document.createElement('canvas');
         const liveOffX = liveOffC.getContext('2d');
+        const liveRotC = document.createElement('canvas');
+        const liveRotX = liveRotC.getContext('2d');
 
         function getMainAspectRatioFallback() {
             try {
@@ -2969,23 +2971,46 @@
             const cols = Math.max(2, Math.round(N * sqrtR));
             const rows = Math.max(2, Math.round(N / sqrtR));
             liveOffC.width = cols; liveOffC.height = rows;
-            // Match camera-app feel by breakpoint:
-            // - cover: full screen, crops
-            // - contain: less crop, can letterbox (but reduces "zoom" perception)
+            // iOS sometimes provides landscape frames while the device is portrait.
+            // Detect and rotate the source before sampling so the preview matches portrait UI.
+            const wantPortrait = (window.innerHeight >= window.innerWidth);
+            const videoLandscape = vw >= vh;
+            const rotate90 = wantPortrait && videoLandscape;
+            const srcEl = rotate90 ? liveRotC : liveVideo;
+            const sw = rotate90 ? vh : vw;
+            const sh = rotate90 ? vw : vh;
+
+            if (rotate90) {
+                liveRotC.width = sw;
+                liveRotC.height = sh;
+                liveRotX.save();
+                liveRotX.clearRect(0, 0, sw, sh);
+                // rotate video into portrait canvas
+                liveRotX.translate(sw / 2, sh / 2);
+                liveRotX.rotate(Math.PI / 2);
+                // mirror (front camera) around vertical axis after rotation
+                if (liveState.mirror) liveRotX.scale(-1, 1);
+                liveRotX.drawImage(liveVideo, -vw / 2, -vh / 2, vw, vh);
+                liveRotX.restore();
+            }
+
+            // Scale mode:
+            // - contain: no crop (can letterbox) — preferred for mobile per user request
+            // - cover: fill (crops)
             const scaleMode = getLiveScaleMode();
-            const scale = (scaleMode === 'contain') ? Math.min(cols / vw, rows / vh) : Math.max(cols / vw, rows / vh);
-            const drawW = vw * scale, drawH = vh * scale;
+            const scale = (scaleMode === 'contain') ? Math.min(cols / sw, rows / sh) : Math.max(cols / sw, rows / sh);
+            const drawW = sw * scale, drawH = sh * scale;
             const dstX = (cols - drawW) / 2, dstY = (rows - drawH) / 2;
             liveOffX.fillStyle = liveState.bgCol;
             liveOffX.fillRect(0, 0, cols, rows);
-            if (liveState.mirror) {
+            if (!rotate90 && liveState.mirror) {
                 liveOffX.save();
                 liveOffX.translate(dstX + drawW, dstY);
                 liveOffX.scale(-1, 1);
-                liveOffX.drawImage(liveVideo, 0, 0, vw, vh, 0, 0, drawW, drawH);
+                liveOffX.drawImage(srcEl, 0, 0, sw, sh, 0, 0, drawW, drawH);
                 liveOffX.restore();
             } else {
-                liveOffX.drawImage(liveVideo, 0, 0, vw, vh, dstX, dstY, drawW, drawH);
+                liveOffX.drawImage(srcEl, 0, 0, sw, sh, dstX, dstY, drawW, drawH);
             }
             return { px: liveOffX.getImageData(0, 0, cols, rows).data, cols, rows };
         }
