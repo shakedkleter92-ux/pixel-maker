@@ -3199,7 +3199,9 @@
             if (panelOpen) {
                 mobShutter.style.display = 'none';
                 mobFlip.style.display = 'none';
-                mobDl.style.display = 'none';
+                // Keep Download available in Draw/Upload even when panel is open.
+                // In Live we download via the preview modal (from shutter/record stop), so keep it hidden.
+                mobDl.style.display = (state.mode === 'live') ? 'none' : 'block';
                 if (mobUndo) mobUndo.style.display = 'none';
                 if (mobRatio) mobRatio.style.display = 'none';
                 if (modeBtn) modeBtn.style.display = 'none';
