@@ -2950,7 +2950,11 @@
             if (!liveVideo.videoWidth) return null;
             const N = liveState.res;
             const vw = liveVideo.videoWidth, vh = liveVideo.videoHeight;
-            const targetRatio = vw / vh;
+            // Camera apps: the preview frame has a chosen UI ratio (e.g. 9:16).
+            // We DO NOT crop the camera; we letterbox inside that portrait frame.
+            const mode = getLayoutMode();
+            const desiredAR = getAspectRatioValue(liveState.aspectRatio); // width/height
+            const targetRatio = (mode === 'mobile') ? desiredAR : (vw / vh);
             // Resolution rule: keep total cells ~ N^2 (cols×rows ≈ N²).
             const sqrtR = Math.sqrt(targetRatio);
             const cols = Math.max(2, Math.round(N * sqrtR));
