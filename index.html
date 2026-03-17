@@ -1792,7 +1792,8 @@
                     gctx.fillStyle = '#111';
                     gctx.font = '12px ui-monospace, SFMono-Regular, Menlo, monospace';
                     const rotFlag = (window.innerHeight >= window.innerWidth && liveVideo && liveVideo.videoWidth && liveVideo.videoHeight && liveVideo.videoWidth > liveVideo.videoHeight) ? ' rot' : '';
-                    gctx.fillText('LIVE ' + String(liveState.aspectRatio || '9:16') + rotFlag + '  ' + state.cols + 'x' + state.rows, 14, 26);
+                    const rotDirLabel = (liveState.rotDir === 0) ? ' auto' : (liveState.rotDir === 1 ? ' cw' : ' ccw');
+                    gctx.fillText('LIVE ' + String(liveState.aspectRatio || '9:16') + rotFlag + rotDirLabel + '  ' + state.cols + 'x' + state.rows, 14, 26);
                     try {
                         gctx.fillText('canvas ' + W + 'x' + H + ' frame ' + cw + 'x' + ch, 14, 42);
                     } catch (_) { }
@@ -2907,6 +2908,7 @@
             bgPixels: null, bgCols: 0, bgRows: 0, bgDiff: 30,
             facingMode: 'user',
             aspectRatio: '9:16', // '9:16' | '4:5' | '1:1' | '3:4' | '16:9'
+            rotDir: 0, // 0=auto, 1=+90 (CW), -1=-90 (CCW)
         };
 
         function getAspectRatioValue(ratioKey) {
@@ -3011,13 +3013,16 @@
             const sh = rotate90 ? vw : vh;
 
             if (rotate90) {
+                const dir = (liveState.rotDir === 0)
+                    ? (liveState.facingMode === 'user' ? 1 : -1)
+                    : liveState.rotDir;
                 liveRotC.width = sw;
                 liveRotC.height = sh;
                 liveRotX.save();
                 liveRotX.clearRect(0, 0, sw, sh);
-                // Rotate -90° to convert landscape buffer into portrait buffer
+                // Rotate ±90° to convert landscape buffer into portrait buffer
                 liveRotX.translate(sw / 2, sh / 2);
-                liveRotX.rotate(-Math.PI / 2);
+                liveRotX.rotate(dir * (Math.PI / 2));
                 liveRotX.drawImage(liveVideo, -vw / 2, -vh / 2, vw, vh);
                 liveRotX.restore();
             }
@@ -3598,7 +3603,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v16';
+            const __BUILD = 'v17';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3632,7 +3637,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=16';
+            const __SW_URL = 'sw.js?v=17';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
