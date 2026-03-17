@@ -1741,22 +1741,11 @@
             }
 
             if (isLive) {
-                // Live preview should NOT stretch and should NOT crop.
-                // We render a live canvas at the camera aspect ratio, then letterbox it into the visible area.
-                var ar = 1;
-                if (liveVideo && liveVideo.videoWidth && liveVideo.videoHeight) ar = liveVideo.videoWidth / liveVideo.videoHeight;
-                else if (W > 0 && H > 0) ar = W / H;
-
-                var cw, ch;
-                if ((W / H) >= ar) {
-                    ch = Math.max(1, H);
-                    cw = Math.max(1, Math.round(ch * ar));
-                } else {
-                    cw = Math.max(1, W);
-                    ch = Math.max(1, Math.round(cw / ar));
-                }
-
-                var coverKey = 'live:' + cw + 'x' + ch;
+                // Live preview frame follows the UI area (mobile = 9:16-ish, desktop = whatever #main is),
+                // while the camera content is handled upstream in sampleLiveFrame (contain/cover).
+                var cw = Math.max(1, W);
+                var ch = Math.max(1, H);
+                var coverKey = 'screen:' + cw + 'x' + ch;
                 if (!liveCoverCanvas || liveCoverLastRatio !== coverKey) {
                     liveCoverCanvas = document.createElement('canvas');
                     liveCoverLastRatio = coverKey;
@@ -1771,7 +1760,7 @@
                 gctx.fillStyle = state.bg;
                 gctx.fillRect(0, 0, W, H);
                 gctx.imageSmoothingEnabled = false;
-                gctx.drawImage(liveCoverCanvas, Math.round((W - cw) / 2), Math.round((H - ch) / 2), cw, ch);
+                gctx.drawImage(liveCoverCanvas, 0, 0, W, H);
                 gctx.imageSmoothingEnabled = true;
                 return;
             }
