@@ -1629,6 +1629,8 @@
         // - tablet: fill screen -> cover
         // - desktop: reduce perceived zoom -> contain
         function getLiveScaleMode() {
+            // Mobile: avoid "crazy zoom" (less crop) -> contain
+            if (isMobileLayout()) return 'contain';
             return isDesktopLayout() ? 'contain' : 'cover';
         }
 
@@ -2895,11 +2897,11 @@
             const idealW = Math.max(320, Math.round(isPortrait ? long * ar : long));
             const idealH = Math.max(320, Math.round(isPortrait ? long : long / ar));
             if (mode === 'mobile') {
+                // Mobile: don't force aspectRatio (some browsers crop/zoom aggressively)
                 return {
                     facingMode: liveState.facingMode,
                     width: { ideal: idealW },
                     height: { ideal: idealH },
-                    aspectRatio: { ideal: ar }
                 };
             }
             if (mode === 'tablet') {
