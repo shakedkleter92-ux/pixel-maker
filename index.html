@@ -73,6 +73,12 @@
             scrollbar-color: var(--border) transparent
         }
 
+        /* Desktop-only section (mode switch lives in panel only on desktop) */
+        .desktop-mode-switch { display: block; }
+        @media (max-width: 1024px) {
+            .desktop-mode-switch { display: none !important; }
+        }
+
         #panel-header {
             padding: 18px 20px 14px;
             border-bottom: 1px solid var(--border)
@@ -90,6 +96,10 @@
             color: var(--muted);
             margin-top: 3px;
             letter-spacing: .05em
+        }
+        /* Hide panel header completely (Pixel Maker title/subtitle) */
+        #panel-header {
+            display: none
         }
 
         .section {
@@ -175,7 +185,21 @@
             display: flex;
             align-items: center;
             gap: 7px;
+            margin-top: 10px;
             margin-bottom: 7px
+        }
+
+        /* Keep stacked sliders tight, but add space after button groups */
+        .slider-row + .slider-row {
+            margin-top: 0;
+        }
+        #shape-grid + .slider-row,
+        #draw-palette + .slider-row,
+        .palette-row + .slider-row,
+        #drop-zone + .slider-row,
+        .palette-presets + #upload-zone,
+        #custom-controls + .slider-row {
+            margin-top: 12px;
         }
 
         .slider-row:last-child {
@@ -232,6 +256,78 @@
             flex: 1
         }
 
+        /* Palette swatches (output colors) */
+        .palette-row {
+            margin-top: 8px;
+            padding: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+        }
+        .palette-label {
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+        .palette-target {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .palette-presets {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .pal-tgt {
+            flex: 1;
+            padding: 6px 6px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            cursor: pointer;
+            color: var(--muted);
+            transition: background .12s, color .12s, transform .12s;
+        }
+        @media (hover:hover) {
+            .pal-tgt:hover {
+                background: var(--surface);
+                color: var(--text);
+            }
+        }
+        .pal-tgt.active {
+            background: var(--text);
+            color: var(--bg);
+        }
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 6px;
+        }
+        .pal-swatch {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            padding: 0;
+            background: transparent;
+            transition: transform .12s;
+        }
+        .pal-swatch:active {
+            transform: scale(.92);
+        }
+        @media (hover:hover) {
+            .pal-swatch:hover { transform: scale(1.08); }
+        }
+
+ 
+
         input[type=color] {
             width: 30px;
             height: 22px;
@@ -261,7 +357,7 @@
             cursor: pointer;
             font-family: 'IBM Plex Mono', monospace;
             color: var(--muted);
-            transition: background .1s
+            transition: background .12s, color .12s, transform .12s
         }
 
         .fm-btn:first-child {
@@ -327,12 +423,167 @@
             text-transform: uppercase;
             cursor: pointer;
             font-family: 'IBM Plex Mono', monospace;
-            transition: background .1s, color .1s;
+            transition: background .12s, color .12s, transform .12s;
             margin-bottom: 5px
+        }
+
+        /* Unified button interactions (like top dock): subtle scale on hover/press */
+        button,
+        .btn,
+        .fm-btn,
+        .shape-btn,
+        .mob-fm-btn,
+        .pal-tgt,
+        .pal-swatch,
+        #panel-toggle-bar,
+        #mob-shutter,
+        #mob-flip,
+        #mob-capture-mode,
+        #mob-download,
+        #mob-undo,
+        #mob-ratio {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .btn:active,
+        .fm-btn:active,
+        .shape-btn:active,
+        .mob-fm-btn:active,
+        .pal-tgt:active,
+        .pal-swatch:active,
+        #panel-toggle-bar:active,
+        #mob-shutter:active,
+        #mob-flip:active,
+        #mob-capture-mode:active,
+        #mob-download:active,
+        #mob-undo:active,
+        #mob-ratio:active {
+            transform: scale(.97);
+        }
+        @media (hover:hover) {
+            .btn:hover,
+            .fm-btn:hover,
+            .shape-btn:hover,
+            .mob-fm-btn:hover,
+            .pal-tgt:hover,
+            .pal-swatch:hover,
+            #panel-toggle-bar:hover,
+            #mob-shutter:hover,
+            #mob-flip:hover,
+            #mob-capture-mode:hover,
+            #mob-download:hover,
+            #mob-undo:hover,
+            #mob-ratio:hover {
+                transform: scale(1.02);
+                background: var(--surface);
+            }
         }
 
         .btn:last-child {
             margin-bottom: 0
+        }
+
+        /* Only show inside panel on desktop; mobile uses floating undo */
+        .desktop-only { display: block; }
+        @media (max-width: 700px) {
+            .desktop-only { display: none !important; }
+        }
+
+        /* ───── Tablet layout (drawer like mobile) ───── */
+        @media (min-width: 701px) and (max-width: 1024px) {
+            html,
+            body {
+                overflow: hidden;
+                height: 100%
+            }
+
+            /* show top mode header on tablet too */
+            #mob-mode-header {
+                display: flex;
+            }
+
+            #app {
+                flex-direction: column;
+                height: 100dvh;
+                overflow: hidden;
+                padding-top: 0;
+                box-sizing: border-box;
+            }
+
+            /* Canvas area fills the top (above bottom bar) */
+            #main {
+                position: fixed;
+                /* Keep canvas flush under the fixed top header (no jump on panel open) */
+                top: 48px;
+                left: 0;
+                right: 0;
+                bottom: 68px;
+                z-index: 0;
+                height: auto;
+                min-height: 0;
+            }
+
+            #grid-canvas {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            /* Panel becomes a sliding drawer from the bottom */
+            #panel {
+                position: fixed;
+                bottom: 68px;
+                left: 0;
+                right: 0;
+                width: 100%;
+                min-width: unset;
+                max-height: 0;
+                overflow: hidden;
+                border-right: none;
+                border-top: 1px solid var(--border);
+                z-index: 90;
+                transition: max-height .35s cubic-bezier(.4, 0, .2, 1)
+            }
+
+            #panel.panel-open {
+                max-height: 40vh;
+                overflow-y: auto;
+                background: rgba(255, 255, 255, 0.6);
+                -webkit-backdrop-filter: blur(14px) saturate(140%);
+                backdrop-filter: blur(14px) saturate(140%);
+                isolation: isolate;
+                color: var(--text);
+            }
+            #panel.panel-open .section {
+                background: rgba(255, 255, 255, 0.35);
+            }
+
+            /* When panel open – keep canvas visible above it */
+            body.panel-open #main {
+                position: fixed !important;
+                top: 48px !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: calc(68px + var(--panel-open-h, 40vh)) !important;
+                z-index: 0;
+                height: auto;
+            }
+            body.panel-open #grid-canvas {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+
+            /* Show toggle bar */
+            #panel-toggle-bar {
+                display: flex
+            }
+
+            /* Hide desktop-only controls */
+            .desktop-only { display: none !important; }
         }
 
         .btn-fill {
@@ -434,7 +685,7 @@
             left: 0;
             right: 0;
             height: 48px;
-            z-index: 100;
+            z-index: 120;
             background: var(--panel);
             border: 1px solid var(--border);
             flex-direction: row;
@@ -453,7 +704,29 @@
             cursor: pointer;
             font-family: 'IBM Plex Mono', monospace;
             color: var(--muted);
-            transition: background .1s;
+            transition: background .12s, color .12s, transform .12s;
+        }
+        #mob-mode-header .mob-fm-btn > span {
+            display: inline-block;
+            transition: transform .12s ease;
+            transform: translateZ(0);
+        }
+        /* Hover: grey background + scale text only */
+        @media (hover:hover) {
+            #mob-mode-header .mob-fm-btn:hover {
+                background: var(--surface);
+                transform: none; /* override global hover scale */
+            }
+            #mob-mode-header .mob-fm-btn:hover > span {
+                transform: scale(1.08);
+            }
+        }
+        /* Press: scale text only */
+        #mob-mode-header .mob-fm-btn:active {
+            transform: none; /* override global active scale */
+        }
+        #mob-mode-header .mob-fm-btn:active > span {
+            transform: scale(.97);
         }
         #mob-mode-header .mob-fm-btn:last-child {
             border-right: none;
@@ -463,7 +736,7 @@
             color: var(--bg);
         }
 
-        /* ───── Mobile bottom bar & panel toggle (גודל ורקע כמו השורה העליונה) ───── */
+        /* ───── Mobile bottom bar & panel toggle ───── */
         #panel-toggle-bar {
             display: none;
             position: fixed;
@@ -474,7 +747,7 @@
             background: var(--bg);
             border-top: 1px solid var(--border);
             border-radius: 0;
-            z-index: 100;
+            z-index: 110;
             align-items: center;
             justify-content: center;
             padding: 0 16px;
@@ -504,6 +777,86 @@
             display: none
         }
 
+        /* Export preview modal */
+        #export-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.35);
+            -webkit-backdrop-filter: blur(10px) saturate(120%);
+            backdrop-filter: blur(10px) saturate(120%);
+        }
+        #export-modal.open { display: flex; }
+        .export-modal-card {
+            width: min(920px, 100%);
+            max-height: min(88vh, 900px);
+            background: rgba(255, 255, 255, 0.72);
+            -webkit-backdrop-filter: blur(14px) saturate(140%);
+            backdrop-filter: blur(14px) saturate(140%);
+            border: 1px solid var(--border);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+        }
+        /* top bar removed */
+        .export-modal-top { display: none; }
+        .export-modal-title { display: none; }
+        .export-modal-body {
+            padding: 14px;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.18);
+        }
+        #export-preview-canvas {
+            max-width: 100%;
+            max-height: 70vh;
+            width: auto;
+            height: auto;
+            image-rendering: pixelated;
+            border: 1px solid rgba(0,0,0,0.12);
+            background: #fff;
+        }
+        #export-preview-video {
+            max-width: 100%;
+            max-height: 70vh;
+            width: 100%;
+            height: auto;
+            border: 1px solid rgba(0,0,0,0.12);
+            background: #000;
+        }
+        .export-modal-actions {
+            padding: 12px 14px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        /* Action buttons: small, side-by-side, stay inside card */
+        .export-modal-actions .btn {
+            padding: 10px 12px;
+            font-size: 10px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            min-width: 120px;
+        }
+        @media (max-width: 700px) {
+            .export-modal-actions {
+                justify-content: space-between;
+                flex-wrap: nowrap;
+            }
+            .export-modal-actions .btn {
+                min-width: 0;
+                flex: 1;
+            }
+        }
+
         /* ───── Responsive breakpoints ───── */
         @media (max-width: 700px) {
 
@@ -521,14 +874,30 @@
                 flex-direction: column;
                 height: 100dvh;
                 overflow: hidden;
-                padding-top: 48px;
+                /* Top dock is overlay (fixed), don't reserve space */
+                padding-top: 0;
                 box-sizing: border-box;
             }
 
             /* Canvas area fills the top */
             #main {
-                flex: 1 1 auto;
-                min-height: 0
+                /* Fill all space between top and bottom bar (no white margins) */
+                position: fixed;
+                /* Keep canvas flush under the fixed top header (no jump on panel open) */
+                top: 48px;
+                left: 0;
+                right: 0;
+                bottom: 68px;
+                z-index: 0;
+                height: auto;
+                min-height: 0;
+            }
+
+            #grid-canvas {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
             }
 
             /* Panel becomes a sliding drawer from the bottom */
@@ -550,12 +919,13 @@
             #panel.panel-open {
                 max-height: 40vh;
                 overflow-y: auto;
-                background: transparent;
+                /* Frosted glass panel (readable over Live) */
+                background: rgba(255, 255, 255, 0.6);
+                -webkit-backdrop-filter: blur(14px) saturate(140%);
+                backdrop-filter: blur(14px) saturate(140%);
                 isolation: isolate;
                 color: var(--text);
             }
-            #panel.panel-open #panel-header h1,
-            #panel.panel-open #panel-header p,
             #panel.panel-open .sec-label,
             #panel.panel-open .sl-label,
             #panel.panel-open .sl-val,
@@ -575,9 +945,8 @@
                 left: 0;
                 right: 0;
                 bottom: 68px;
-                background: rgba(255, 255, 255, 0.05);
-                -webkit-backdrop-filter: blur(6px);
-                backdrop-filter: blur(6px);
+                /* subtle dim behind the frosted panel */
+                background: rgba(0, 0, 0, 0.06);
                 z-index: -1;
                 pointer-events: none;
             }
@@ -585,11 +954,8 @@
                 position: relative;
                 z-index: 1;
             }
-            #panel.panel-open #panel-header {
-                background: rgba(255, 255, 255, 0.15);
-            }
             #panel.panel-open .section {
-                background: rgba(255, 255, 255, 0.1);
+                background: rgba(255, 255, 255, 0.35);
             }
 
             /* כשהפאנל פתוח – הקנבס נצמד ל-header (Draw / Image / Live), אזור הקנבס רק מעל הפאנל */
@@ -598,7 +964,8 @@
                 top: 48px !important;
                 left: 0 !important;
                 right: 0 !important;
-                bottom: calc(68px + 40vh) !important;
+                /* Use actual panel height to avoid large empty gap */
+                bottom: calc(68px + var(--panel-open-h, 40vh)) !important;
                 z-index: 0;
                 height: auto;
             }
@@ -708,6 +1075,16 @@
             }
         }
 
+        /* Tablet / large phones: show mobile docks too (layout stays desktop) */
+        @media (max-width: 1024px) {
+            #mob-mode-header {
+                display: flex;
+            }
+            #panel-toggle-bar {
+                display: flex;
+            }
+        }
+
         /* ─── Floating Action Button (mobile download / camera flip) ─── */
         /* ─── Mobile Camera Buttons ─── */
 
@@ -716,6 +1093,7 @@
         #mob-flip,
         #mob-capture-mode,
         #mob-download,
+        #mob-undo,
         #mob-ratio {
             display: none;
             position: fixed;
@@ -732,8 +1110,9 @@
         #mob-flip:active,
         #mob-capture-mode:active,
         #mob-download:active,
+        #mob-undo:active,
         #mob-ratio:active {
-            transform: scale(.88)
+            transform: scale(.97)
         }
 
         /* Shutter — גובה 58px, מרכז תחתון */
@@ -747,6 +1126,10 @@
 
         #mob-shutter:active {
             transform: translateX(-50%) scale(.88)
+        }
+        @media (hover:hover) {
+            /* Keep centered on hover (don't lose translateX) */
+            #mob-shutter:hover { transform: translateX(-50%) scale(1.02); }
         }
 
         /* Inner square — smaller, centered, with clear gap from outer frame */
@@ -764,7 +1147,7 @@
             border-color: #ff2b2b
         }
 
-        /* Flip camera — small square, bottom-left */
+        /* Flip camera — bottom-left (Live mobile) */
         #mob-flip {
             width: 44px;
             height: 44px;
@@ -807,12 +1190,17 @@
             padding: 0 4px;
         }
         #mob-capture-mode:active { transform: translateX(-50%) scale(.95); }
+        @media (hover:hover) {
+            /* Keep centered on hover (don't lose translateX) */
+            #mob-capture-mode:hover { transform: translateX(-50%) scale(1.02); }
+        }
 
-        /* Download — small, bottom-right */
+        /* Download — bottom-right (Live + other mobile modes) */
         #mob-download {
             width: 44px;
             height: 44px;
             bottom: 86px;
+            left: auto;
             right: 20px
         }
 
@@ -822,6 +1210,37 @@
             font-size: 20px;
             line-height: 1;
             color: var(--border)
+        }
+
+        /* Undo — small, bottom-right */
+        #mob-undo {
+            width: 44px;
+            height: 44px;
+            bottom: 86px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        #mob-undo svg {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+
+        /* Desktop: show floating undo outside panel (Draw) */
+        @media (min-width: 1025px) {
+            #mob-undo {
+                display: none;
+            }
+            body.show-desktop-undo #mob-undo {
+                display: flex;
+                position: fixed;
+                right: 20px;
+                bottom: 20px;
+                z-index: 120;
+            }
         }
 
         /* Aspect ratio — top-right, Live only (on mobile below mode header) */
@@ -920,10 +1339,10 @@
         <button type="button" class="skip-btn" id="install-prompt-skip">Continue to app</button>
     </div>
     <!-- Mobile top header: mode switch (DRAW / IMAGE / LIVE) -->
-    <div id="mob-mode-header">
-        <button type="button" class="mob-fm-btn active" id="mob-fm-draw">Draw</button>
-        <button type="button" class="mob-fm-btn" id="mob-fm-image">Image</button>
-        <button type="button" class="mob-fm-btn" id="mob-fm-live">Live</button>
+    <div id="mob-mode-header" aria-label="Modes">
+        <button type="button" class="mob-fm-btn active" id="mob-fm-draw"><span>Draw</span></button>
+        <button type="button" class="mob-fm-btn" id="mob-fm-image"><span>Upload</span></button>
+        <button type="button" class="mob-fm-btn" id="mob-fm-live"><span>Live</span></button>
     </div>
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
@@ -942,15 +1361,28 @@
     <button id="mob-flip" aria-label="Flip camera" style="display:none">
         <img src="camera-switch.svg" alt="" width="22" height="22">
     </button>
-    <!-- Download: small circle bottom-right -->
+    <!-- Download: small circle bottom-left -->
     <button id="mob-capture-mode" aria-label="Capture mode" type="button">image</button>
     <button id="mob-download" aria-label="Download"></button>
+    <!-- Undo: small circle bottom-right (Draw/Image) -->
+    <button id="mob-undo" aria-label="Undo" type="button" style="display:none">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="square" aria-hidden="true">
+            <path d="M9 14l-4-4 4-4" />
+            <path d="M5 10h7a7 7 0 1 1 0 14h-2" />
+        </svg>
+    </button>
 
     <div id="app">
         <aside id="panel">
-            <div id="panel-header">
-                <h1>Pixel Maker</h1>
-                <p>make it pixel</p>
+
+            <!-- Mode switch (desktop): keep first in panel -->
+            <div class="section desktop-mode-switch">
+                <div id="fill-mode" style="display:flex">
+                    <button class="fm-btn active" id="fm-draw" style="flex:1">Draw</button>
+                    <button class="fm-btn" id="fm-image" style="flex:1">Upload</button>
+                    <button class="fm-btn" id="fm-live" style="flex:1">Live</button>
+                </div>
             </div>
 
             <!-- 01 Shape -->
@@ -960,10 +1392,15 @@
                     <button class="shape-btn active" data-shape="square">Square</button>
                     <button class="shape-btn" data-shape="custom" id="btn-custom">Custom Shape</button>
                 </div>
-                <div class="slider-row" style="margin-top:8px">
+                <div class="slider-row">
                     <span class="sl-label">Rotation</span>
                     <input type="range" id="d-rotation" min="0" max="359" value="0" />
                     <span class="sl-val" id="d-rotation-v">0°</span>
+                </div>
+                <div class="slider-row">
+                    <span class="sl-label">Resolution</span>
+                    <input type="range" id="g-res" min="8" max="200" value="20" />
+                    <span class="sl-val" id="g-res-v">20</span>
                 </div>
                 <div id="custom-controls">
                     <div id="custom-hint">
@@ -977,34 +1414,45 @@
             </div>
 
             <!-- 02 Grid -->
-            <div class="section">
+            <div class="section" id="grid-section">
                 <div class="sec-label"><span class="sec-num">02</span> Grid</div>
                 <div class="slider-row"><span class="sl-label">Columns</span><input type="range" id="d-cols" min="2"
-                        max="200" value="10" /><span class="sl-val" id="d-cols-v">10</span></div>
+                        max="200" value="20" /><span class="sl-val" id="d-cols-v">20</span></div>
                 <div class="slider-row"><span class="sl-label">Rows</span><input type="range" id="d-rows" min="2"
-                        max="200" value="10" /><span class="sl-val" id="d-rows-v">10</span></div>
+                        max="200" value="20" /><span class="sl-val" id="d-rows-v">20</span></div>
                 <div class="slider-row"><span class="sl-label">Gap</span><input type="range" id="d-gap" min="0" max="20"
                         value="0" /><span class="sl-val" id="d-gap-v">0</span></div>
             </div>
 
-            <!-- 03 Fill -->
-            <div class="section">
-                <div class="fill-mode-switcher">
-                    <div class="sec-label"><span class="sec-num">03</span> Fill</div>
-                    <div id="fill-mode" style="display:flex">
-                        <button class="fm-btn active" id="fm-draw" style="flex:1">Draw</button>
-                        <button class="fm-btn" id="fm-image" style="flex:1">Image</button>
-                        <button class="fm-btn" id="fm-live" style="flex:1">Live</button>
+            <!-- 03 Palette -->
+            <div class="section" id="palette-section">
+                <div class="sec-label"><span class="sec-num">03</span> Palette</div>
+                <div class="palette-presets" id="palette-presets">
+                    <button type="button" class="pal-tgt" data-preset="moldy_orange_7">Moldy</button>
+                    <button type="button" class="pal-tgt" data-preset="oil_6">Oil</button>
+                    <button type="button" class="pal-tgt" data-preset="midnight_ablaze">Midnight</button>
+                    <button type="button" class="pal-tgt active" data-preset="slso8">SLSO8</button>
+                    <button type="button" class="pal-tgt" data-preset="rust_gold_8">RustGold</button>
+                    <button type="button" class="pal-tgt" data-preset="blessing">Blessing</button>
+                </div>
+                <!-- Upload (Image mode): only upload control lives under Palette -->
+                <div id="upload-zone" style="display:none; margin-top:10px">
+                    <div id="drop-zone">
+                        <input type="file" id="file-input" accept="image/*" class="dz-input" />
+                        <div class="dz-text">Drop image here<br />or click to browse</div>
+                        <div id="file-name"></div>
                     </div>
                 </div>
+            </div>
 
+            <!-- 04 Fill -->
+            <div class="section">
                 <!-- Draw options -->
                 <div id="draw-options">
-                    <div class="color-row"><label>Background</label><input type="color" id="d-bg" value="#ffffff" />
+                    <div class="palette-row">
+                        <div class="palette-label">Pick color</div>
+                        <div class="palette-grid" id="draw-palette"></div>
                     </div>
-                    <div class="color-row"><label>Stroke</label><input type="color" id="d-stroke-col" value="#000000" />
-                    </div>
-                    <div class="color-row"><label>Fill</label><input type="color" id="d-fill" value="#000000" /></div>
                     <div class="slider-row"><span class="sl-label">Brush</span><input type="range" id="d-brush" min="1"
                             max="5" value="1" /><span class="sl-val" id="d-brush-v">1</span></div>
                     <!-- Reference image -->
@@ -1019,82 +1467,19 @@
                     <div class="slider-row"><span class="sl-label">Opacity</span><input type="range" id="ref-opacity"
                             min="5" max="80" value="30" /><span class="sl-val" id="ref-opacity-v">30%</span></div>
                     <button class="btn btn-outline" id="btn-clear-ref" style="margin-top:4px">Clear Reference</button>
-                    <div style="margin-top:6px;font-size:8px;color:var(--muted);letter-spacing:.04em">Left click: paint
-                        · Right click: erase</div>
+                    
                 </div>
 
                 <!-- Image options -->
-                <div id="image-options" style="display:none">
-                    <div id="drop-zone">
-                        <input type="file" id="file-input" accept="image/*" class="dz-input" />
-                        <div class="dz-text">Drop image here<br />or click to browse</div>
-                        <div id="file-name"></div>
-                    </div>
-                    <div class="slider-row" style="margin-top:6px"><span class="sl-label">Resolution</span><input
-                            type="range" id="i-res" min="4" max="200" value="20" /><span class="sl-val"
-                            id="i-res-v">20</span></div>
-                    <div class="slider-row"><span class="sl-label">Edge Enhance</span><input type="range" id="i-edge"
-                            min="0" max="10" value="0" step="0.5" /><span class="sl-val" id="i-edge-v">0</span></div>
-                    <div class="slider-row"><span class="sl-label">BG Cutoff</span><input type="range" id="i-bg-cut"
-                            min="1" max="255" value="220" /><span class="sl-val" id="i-bg-cut-v">220</span></div>
-                    <div class="slider-row"><span class="sl-label">Split</span><input type="range" id="i-thresh" min="1"
-                            max="255" value="128" /><span class="sl-val" id="i-thresh-v">128</span></div>
-                    <div class="color-row" style="margin-top:6px"><label>Background</label><input type="color" id="i-bg"
-                            value="#ffffff" /></div>
-                    <div class="color-row"><label>Edge color</label><input type="color" id="i-edge-col"
-                            value="#000000" />
-                    </div>
-                    <div class="color-row"><label>Color 1 (dark)</label><input type="color" id="i-fill-col"
-                            value="#000000" />
-                    </div>
-                    <div class="color-row"><label>Color 2 (light)</label><input type="color" id="i-fill-col2"
-                            value="#ffffff" />
-                    </div>
-                    <button class="btn btn-outline" id="i-use-image-colors" style="margin-top:6px">Use image colors</button>
-                </div>
+                <div id="image-options" style="display:none"></div>
 
-                <!-- Live Camera options -->
-                <div id="live-options" style="display:none">
-                    <div style="font-size:9px;color:var(--muted);margin-bottom:8px;line-height:1.6">Camera opens live —
-                        your image appears on the grid in real time.</div>
-                    <div class="slider-row"><span class="sl-label">Resolution</span><input type="range" id="l-res"
-                            min="4" max="200" value="200" /><span class="sl-val" id="l-res-v">200</span></div>
-                    <div class="slider-row"><span class="sl-label">Edge Enhance</span><input type="range" id="l-edge"
-                            min="0" max="10" value="10" step="0.5" /><span class="sl-val" id="l-edge-v">10</span></div>
-                    <div class="slider-row"><span class="sl-label">BG Cutoff</span><input type="range" id="l-bg-cut"
-                            min="1" max="255" value="255" /><span class="sl-val" id="l-bg-cut-v">255</span></div>
-                    <div class="slider-row"><span class="sl-label">Split</span><input type="range" id="l-thresh" min="1"
-                            max="255" value="132" /><span class="sl-val" id="l-thresh-v">132</span></div>
-                    <!-- Silhouette mode -->
-                    <div
-                        style="margin-top:8px;font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">
-                        Silhouette</div>
-                    <button class="btn btn-outline" id="l-capture-bg">Capture Background</button>
-                    <div id="l-bg-status" style="font-size:8px;color:var(--muted);margin-top:3px;margin-bottom:4px">No
-                        background captured</div>
-                    <div class="slider-row"><span class="sl-label">Sensitivity</span><input type="range" id="l-bg-diff"
-                            min="5" max="120" value="30" /><span class="sl-val" id="l-bg-diff-v">30</span></div>
-                    <button class="btn btn-outline" id="l-clear-bg" style="margin-bottom:8px">Clear Background</button>
-                    <!-- end silhouette -->
-                    <div class="color-row" style="margin-top:4px"><label>Background</label><input type="color" id="l-bg"
-                            value="#ffffff" /></div>
-                    <div class="color-row"><label>Color 1 (dark)</label><input type="color" id="l-fill"
-                            value="#000000" /></div>
-                    <div class="color-row"><label>Color 2 (light)</label><input type="color" id="l-fill2"
-                            value="#888888" /></div>
-                    <div class="color-row" style="margin-top:4px">
-                        <label>Mirror</label>
-                        <input type="checkbox" id="l-mirror" checked style="width:18px;height:18px;cursor:pointer" />
-                    </div>
-                    <button class="btn btn-outline" id="l-snapshot" style="margin-top:8px">Snapshot to Grid</button>
-                    <button class="btn btn-outline" id="l-flip-cam" style="margin-top:5px">Flip Camera
-                        (Front/Back)</button>
-                </div>
+                <!-- Live Camera options (minimal) -->
+                <div id="live-options" style="display:none"></div>
             </div>
 
-            <!-- 04 Export -->
+            <!-- 05 Export -->
             <div class="section">
-                <div class="sec-label"><span class="sec-num">04</span> Export</div>
+                <div class="sec-label"><span class="sec-num">05</span> Export</div>
                 <button class="btn btn-fill" id="dl-pixels">Download</button>
                 <button class="btn btn-outline" id="btn-clear">Clear All</button>
             </div>
@@ -1107,7 +1492,40 @@
         </main>
     </div>
 
+    <!-- Export preview modal -->
+    <div id="export-modal" aria-hidden="true">
+        <div class="export-modal-card" role="dialog" aria-modal="true" aria-label="Export preview">
+            <div class="export-modal-body">
+                <canvas id="export-preview-canvas"></canvas>
+                <video id="export-preview-video" controls playsinline style="display:none"></video>
+            </div>
+            <div class="export-modal-actions">
+                <button type="button" class="btn btn-fill" id="export-confirm">Download</button>
+                <button type="button" class="btn btn-outline" id="export-close">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Surface runtime errors (helps when something stops all buttons)
+        (function () {
+            let shown = false;
+            function show(msg) {
+                if (shown) return;
+                shown = true;
+                try { alert(msg); } catch (_) { }
+            }
+            window.addEventListener('error', function (e) {
+                const m = (e && e.message) ? e.message : 'Unknown error';
+                show('App error: ' + m);
+            });
+            window.addEventListener('unhandledrejection', function (e) {
+                const r = e && e.reason;
+                const m = r ? (r.message || String(r)) : 'Unhandled promise rejection';
+                show('App error: ' + m);
+            });
+        })();
+
         // ═══════════════════════════════════════════════════
         //  SHAPE PATH HELPER
         // ═══════════════════════════════════════════════════
@@ -1152,7 +1570,7 @@
         //  STATE  — cells[r][c] = string color | null (empty)
         // ═══════════════════════════════════════════════════
         const state = {
-            shape: 'square', cols: 10, rows: 10, gap: 0, strokeW: 0.5,
+            shape: 'square', cols: 20, rows: 20, gap: 0, strokeW: 0.5,
             bg: '#ffffff', strokeCol: '#000000', fillCol: '#000000',
             brushSize: 1, rotation: 0,
             cells: [], hoverR: -1, hoverC: -1,
@@ -1162,6 +1580,8 @@
             srcImage: null, imgRes: 20, imgBg: '#ffffff', imgStrokeCol: '#000000', imgFillCol: '#000000',
             imgThreshold: 128, imgBgCut: 220, imgFillCol2: '#ffffff', imgEdge: 0,
             useImageColors: true,
+            imageManualGrid: false,
+            gapBeforeLive: null,
             // reference image (draw mode)
             refImage: null, refOpacity: 0.3,
             // custom shape
@@ -1191,13 +1611,37 @@
         const gridCanvas = document.getElementById('grid-canvas');
         const gctx = gridCanvas.getContext('2d');
 
+        // 3 breakpoints: mobile / tablet / desktop
+        const BP_MOBILE = 700;
+        const BP_TABLET = 1024;
+        function getLayoutMode() {
+            const w = window.innerWidth || 0;
+            if (w <= BP_MOBILE) return 'mobile';
+            if (w <= BP_TABLET) return 'tablet';
+            return 'desktop';
+        }
+        function isMobileLayout() { return getLayoutMode() === 'mobile'; }
+        function isTabletLayout() { return getLayoutMode() === 'tablet'; }
+        function isDesktopLayout() { return getLayoutMode() === 'desktop'; }
+
+        // Live camera "preview fill" mode by breakpoint.
+        // - mobile: fill screen (like camera apps) -> cover
+        // - tablet: fill screen -> cover
+        // - desktop: reduce perceived zoom -> contain
+        function getLiveScaleMode() {
+            return isDesktopLayout() ? 'contain' : 'cover';
+        }
+
 
         // Returns cell layout: {cw, ch, ox, oy} — always square cells, centered in canvas
         function cellLayout(W, H) {
             const gap = state.gap;
             const byW = (W - gap * (state.cols - 1)) / state.cols;
             const byH = (H - gap * (state.rows - 1)) / state.rows;
-            const cs = Math.max(1, Math.min(byW, byH));
+            // Live: fill the whole canvas area (cover) to avoid big margins (all breakpoints).
+            // Draw/Image: keep contain so user grid stays fully visible.
+            const cover = state.mode === 'live';
+            const cs = Math.max(1, cover ? Math.max(byW, byH) : Math.min(byW, byH));
             const gw = state.cols * cs + (state.cols - 1) * gap;
             const gh = state.rows * cs + (state.rows - 1) * gap;
             return { cw: cs, ch: cs, ox: (W - gw) / 2, oy: (H - gh) / 2 };
@@ -1212,7 +1656,10 @@
                 ctx.drawImage(state.refImage, 0, 0, W, H);
                 ctx.globalAlpha = 1;
             }
-            const rx0 = cw / 2 * .92, ry0 = ch / 2 * .92;
+            // When Gap=0 the user expects cells to touch (no internal padding).
+            // Live always uses full cells; Draw/Image use full cells only when Gap=0.
+            const pad = (state.mode === 'live' || state.gap === 0) ? 1 : 0.92;
+            const rx0 = cw / 2 * pad, ry0 = ch / 2 * pad;
             const rotRad = state.rotation * Math.PI / 180;
             for (let row = 0; row < state.rows; row++) {
                 for (let col = 0; col < state.cols; col++) {
@@ -1255,18 +1702,22 @@
         function renderGrid() {
             const m = document.getElementById('main');
             const isLive = state.mode === 'live';
+            const compact = isMobileLayout();
             var W, H;
             if (isLive) {
-                const isMobile = window.innerWidth <= 700;
+                const isMobile = compact;
                 if (isMobile) {
-                    document.body.classList.add('live-fullscreen');
-                    if (document.body.classList.contains('panel-open')) {
-                        W = m.clientWidth;
-                        H = m.clientHeight;
-                    } else {
-                        W = window.innerWidth;
-                        H = window.innerHeight;
-                    }
+                    // Compact layout: keep canvas inside #main so it always fits above the panel
+                    document.body.classList.remove('live-fullscreen');
+                    gridCanvas.style.position = 'absolute';
+                    gridCanvas.style.left = '0';
+                    gridCanvas.style.top = '0';
+                    gridCanvas.style.width = '100%';
+                    gridCanvas.style.height = '100%';
+                    // Always size to the actual visible canvas area (main),
+                    // otherwise opening/closing the panel creates large white margins.
+                    W = m.clientWidth;
+                    H = m.clientHeight;
                 } else {
                     // Desktop: הקנבס חי בתוך main, הפאנל נשאר גלוי בצד
                     document.body.classList.remove('live-fullscreen');
@@ -1290,11 +1741,14 @@
             }
 
             if (isLive) {
-                var dim = LIVE_EXPORT_DIMENSIONS[liveState.aspectRatio] || LIVE_EXPORT_DIMENSIONS['9:16'];
-                var cw = dim.w, ch = dim.h;
-                if (!liveCoverCanvas || liveCoverLastRatio !== liveState.aspectRatio) {
+                // Live behaves like a camera preview ("aspect fill"): what you see is what you export.
+                // So the offscreen cover canvas matches the visible area exactly (no fixed ratios -> no white margins).
+                var cw = Math.max(1, W);
+                var ch = Math.max(1, H);
+                var coverKey = 'screen:' + cw + 'x' + ch;
+                if (!liveCoverCanvas || liveCoverLastRatio !== coverKey) {
                     liveCoverCanvas = document.createElement('canvas');
-                    liveCoverLastRatio = liveState.aspectRatio;
+                    liveCoverLastRatio = coverKey;
                 }
                 liveCoverCanvas.width = cw;
                 liveCoverCanvas.height = ch;
@@ -1304,9 +1758,7 @@
                 gridCanvas.height = H;
                 gctx.fillStyle = state.bg;
                 gctx.fillRect(0, 0, W, H);
-                var scale = Math.max(W / cw, H / ch);
-                var dw = cw * scale, dh = ch * scale;
-                gctx.drawImage(liveCoverCanvas, (W - dw) / 2, (H - dh) / 2, dw, dh);
+                gctx.drawImage(liveCoverCanvas, 0, 0, W, H);
                 return;
             }
 
@@ -1363,8 +1815,43 @@
             if (editorDragging) { editorDragging = null; editorCanvas.style.cursor = 'crosshair'; if (state.editorMode) renderEditor(); }
         });
         window.addEventListener('resize', () => {
+            // On breakpoint changes, normalize panel state so canvas doesn't "jump"
+            try {
+                const lm = getLayoutMode();
+                if (window.__layoutMode !== lm) {
+                    window.__layoutMode = lm;
+                    const pan = document.getElementById('panel');
+                    const bar = document.getElementById('panel-toggle-bar');
+                    if (lm === 'desktop') {
+                        if (pan) pan.classList.remove('panel-open');
+                        document.body.classList.remove('panel-open');
+                        if (bar) bar.classList.remove('active');
+                        document.documentElement.style.setProperty('--panel-open-h', '0px');
+                    } else {
+                        // Start closed on mobile/tablet; opening the panel is user-controlled
+                        if (pan) pan.classList.remove('panel-open');
+                        document.body.classList.remove('panel-open');
+                        if (bar) bar.classList.remove('active');
+                        document.documentElement.style.setProperty('--panel-open-h', '0px');
+                    }
+                }
+            } catch (_) { }
+            // Keep panel height var in sync (prevents gaps when panel content wraps)
+            syncPanelOpenHeightVar();
+            // If Live is running and breakpoint changed, restart camera with new constraints
+            try {
+                if (state.mode === 'live') {
+                    const modeNow = getLayoutMode();
+                    if (window.__liveLayoutMode !== modeNow) {
+                        window.__liveLayoutMode = modeNow;
+                        stopCamera();
+                        startCamera();
+                    }
+                }
+            } catch (_) { }
             if (!state.editorMode) renderGrid(); else renderEditor();
             if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
+            updateDesktopUndoFab();
         });
 
         // ── Keyboard shortcuts ─────────────────────────────
@@ -1380,6 +1867,16 @@
             if (e.key === 'Backspace' && !shapeClosed) { editorPts.pop(); renderEditor(); }
             if (e.key === 'Escape') exitEditorMode();
         });
+
+        // Undo buttons (Draw)
+        function doUndo() {
+            if (undoStack.length > 0) {
+                state.cells = undoStack.pop();
+                renderGrid();
+            }
+        }
+        const mobUndo = document.getElementById('mob-undo');
+        if (mobUndo) mobUndo.addEventListener('click', doUndo);
 
         // ═══════════════════════════════════════════════════
         //  SHAPE EDITOR
@@ -1636,14 +2133,21 @@
             renderEditor();
         });
 
-        document.getElementById('btn-clear-shape').addEventListener('click', () => {
+        function on(id, ev, fn, opts) {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener(ev, fn, opts);
+            return el;
+        }
+
+        on('btn-clear-shape', 'click', () => {
             editorPts = []; shapeClosed = false;
             editorDragStart = null; editorIsDragging = false; editorPendingHandle = null; editorDragging = null;
-            document.getElementById('btn-confirm-shape').disabled = true;
+            var confirmBtn = document.getElementById('btn-confirm-shape');
+            if (confirmBtn) confirmBtn.disabled = true;
             updateEditorStatus('Click = sharp point  ·  Click+drag = smooth curve  ·  Click first point to close');
             renderEditor();
         });
-        document.getElementById('btn-confirm-shape').addEventListener('click', closeEditorAndApply);
+        on('btn-confirm-shape', 'click', closeEditorAndApply);
 
         // ═══════════════════════════════════════════════════
         //  CONTROLS WIRING
@@ -1668,64 +2172,80 @@
                 if (key === 'cols' || key === 'rows') { if (state[key] !== newVal) state.exportRatio = null; }
                 state[key] = newVal; vl.textContent = sl.value + (suffix || '');
                 if (reset) { resetCells(); }
-                if (state.mode === 'image' && state.srcImage) applyImage(); else renderGrid();
+                if (state.mode === 'image' && state.srcImage) {
+                    if (key === 'cols' || key === 'rows') state.imageManualGrid = true;
+                    applyImage();
+                } else renderGrid();
             });
         }
         bindSlider('d-cols', 'd-cols-v', 'cols', true);
         bindSlider('d-rows', 'd-rows-v', 'rows', true);
         bindSlider('d-gap', 'd-gap-v', 'gap', false);
 
-        // Draw color pickers
-        document.getElementById('d-bg').addEventListener('input', e => { state.bg = e.target.value; renderGrid(); });
-        document.getElementById('d-stroke-col').addEventListener('input', e => { state.strokeCol = e.target.value; renderGrid(); });
-        document.getElementById('d-fill').addEventListener('input', e => { state.fillCol = e.target.value; renderGrid(); });
-        document.getElementById('d-brush').addEventListener('input', function () {
+        // Draw controls
+        on('d-brush', 'input', function () {
             state.brushSize = +this.value;
-            document.getElementById('d-brush-v').textContent = this.value;
+            var bv = document.getElementById('d-brush-v'); if (bv) bv.textContent = this.value;
         });
         // Rotation slider
-        document.getElementById('d-rotation').addEventListener('input', function () {
+        on('d-rotation', 'input', function () {
             state.rotation = +this.value;
-            document.getElementById('d-rotation-v').textContent = this.value + '°';
+            var rv = document.getElementById('d-rotation-v'); if (rv) rv.textContent = this.value + '°';
             renderGrid();
         });
 
+        // Global resolution (controls Image + Live resolution)
+        on('g-res', 'input', function () {
+            var v = +this.value;
+            var vv = document.getElementById('g-res-v'); if (vv) vv.textContent = String(v);
+            state.imgRes = v;
+            liveState.res = v;
+            var ir = document.getElementById('i-res'); if (ir) ir.value = String(v);
+            var irv = document.getElementById('i-res-v'); if (irv) irv.textContent = String(v);
+            var lr = document.getElementById('l-res'); if (lr) lr.value = String(v);
+            var lrv = document.getElementById('l-res-v'); if (lrv) lrv.textContent = String(v);
+            state.imageManualGrid = false;
+            if (state.mode === 'image' && state.srcImage) applyImage();
+        });
+
         // Reference image
-        document.getElementById('ref-input').addEventListener('change', e => loadRef(e.target.files[0]));
-        document.getElementById('ref-zone').addEventListener('dragover', e => { e.preventDefault(); });
-        document.getElementById('ref-zone').addEventListener('drop', e => { e.preventDefault(); loadRef(e.dataTransfer.files[0]); });
+        on('ref-input', 'change', e => loadRef(e.target.files[0]));
+        on('ref-zone', 'dragover', e => { e.preventDefault(); });
+        on('ref-zone', 'drop', e => { e.preventDefault(); loadRef(e.dataTransfer.files[0]); });
         function loadRef(file) {
             if (!file || !file.type.startsWith('image/')) return;
             const reader = new FileReader();
             reader.onload = ev => { const img = new Image(); img.onload = () => { state.refImage = img; document.getElementById('ref-name').textContent = file.name; renderGrid(); }; img.src = ev.target.result; };
             reader.readAsDataURL(file);
         }
-        document.getElementById('ref-opacity').addEventListener('input', function () {
+        on('ref-opacity', 'input', function () {
             state.refOpacity = +this.value / 100;
-            document.getElementById('ref-opacity-v').textContent = this.value + '%';
+            var ov = document.getElementById('ref-opacity-v'); if (ov) ov.textContent = this.value + '%';
             renderGrid();
         });
-        document.getElementById('btn-clear-ref').addEventListener('click', () => {
+        on('btn-clear-ref', 'click', () => {
             state.refImage = null;
-            document.getElementById('ref-name').textContent = '';
-            document.getElementById('ref-input').value = '';
+            var rn = document.getElementById('ref-name'); if (rn) rn.textContent = '';
+            var ri = document.getElementById('ref-input'); if (ri) ri.value = '';
             renderGrid();
         });
 
         // Fill mode switch – תמיד עוברים דרך switchToMode כדי לעצור מצלמה אם צריך
-        document.getElementById('fm-draw').addEventListener('click', () => switchToMode('draw'));
-        document.getElementById('fm-image').addEventListener('click', () => switchToMode('image'));
-        document.getElementById('fm-live').addEventListener('click', () => switchToMode('live'));
-        document.getElementById('mob-fm-draw').addEventListener('click', () => switchToMode('draw'));
-        document.getElementById('mob-fm-image').addEventListener('click', () => switchToMode('image'));
-        document.getElementById('mob-fm-live').addEventListener('click', () => switchToMode('live'));
+        on('fm-draw', 'click', () => switchToMode('draw'));
+        on('fm-image', 'click', () => switchToMode('image'));
+        on('fm-live', 'click', () => switchToMode('live'));
+        on('mob-fm-draw', 'click', () => switchToMode('draw'));
+        on('mob-fm-image', 'click', () => switchToMode('image'));
+        on('mob-fm-live', 'click', () => switchToMode('live'));
 
         // Image upload
         const dropZone = document.getElementById('drop-zone');
-        document.getElementById('file-input').addEventListener('change', e => loadFile(e.target.files[0]));
-        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-        dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); loadFile(e.dataTransfer.files[0]); });
+        on('file-input', 'change', e => loadFile(e.target.files[0]));
+        if (dropZone) {
+            dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+            dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); loadFile(e.dataTransfer.files[0]); });
+        }
         function loadFile(file) {
             if (!file || !file.type.startsWith('image/')) return;
             const reader = new FileReader();
@@ -1734,24 +2254,21 @@
         }
 
         // Image-mode color pickers (all call renderGrid directly for instant feedback)
-        document.getElementById('i-res').addEventListener('input', function () {
+        on('i-res', 'input', function () {
             state.imgRes = +this.value; document.getElementById('i-res-v').textContent = this.value;
+            state.imageManualGrid = false;
             if (state.srcImage) applyImage();
         });
-        document.getElementById('i-bg-cut').addEventListener('input', function () {
+        on('i-bg-cut', 'input', function () {
             state.imgBgCut = +this.value; document.getElementById('i-bg-cut-v').textContent = this.value;
             if (state.srcImage) applyImage();
         });
-        document.getElementById('i-thresh').addEventListener('input', function () {
+        on('i-thresh', 'input', function () {
             state.imgThreshold = +this.value; document.getElementById('i-thresh-v').textContent = this.value;
             if (state.srcImage) applyImage();
         });
-        document.getElementById('i-bg').addEventListener('input', e => { state.imgBg = e.target.value; state.bg = e.target.value; renderGrid(); });
-        document.getElementById('i-edge-col').addEventListener('input', e => { state.imgStrokeCol = e.target.value; state.useImageColors = false; if (state.srcImage) applyImage(); else renderGrid(); });
-        document.getElementById('i-fill-col').addEventListener('input', e => { state.imgFillCol = e.target.value; state.useImageColors = false; if (state.srcImage) applyImage(); else renderGrid(); });
-        document.getElementById('i-fill-col2').addEventListener('input', e => { state.imgFillCol2 = e.target.value; state.useImageColors = false; if (state.srcImage) applyImage(); else renderGrid(); });
-        document.getElementById('i-use-image-colors').addEventListener('click', () => { state.useImageColors = true; if (state.srcImage) applyImage(); });
-        document.getElementById('i-edge').addEventListener('input', function () {
+        on('i-use-image-colors', 'click', () => { state.useImageColors = true; if (state.srcImage) applyImage(); });
+        on('i-edge', 'input', function () {
             state.imgEdge = +this.value; document.getElementById('i-edge-v').textContent = this.value;
             if (state.srcImage) applyImage();
         });
@@ -1797,19 +2314,214 @@
             }).join('');
         }
 
+        // Brand palette (for OUTPUT colors: draw/image/live)
+        const BRAND_PALETTE_ALL = [
+            '#32282c', '#415066', '#324fcd', '#60575e', '#656140',
+            '#b66350', '#7d8b96', '#6f8bc2', '#85a352', '#82a4b3',
+            '#aaa377', '#a3aeb1', '#b0cddc', '#ddd49b', '#ffffff'
+        ];
+
+        // Palette presets provided by user (used for Draw + Image + Live quantization)
+        const PALETTE_PRESETS = {
+            moldy_orange_7: ['#04151f', '#17493e', '#7b9171', '#f5e4c9', '#e58929', '#7c351e', '#4d1f1d'],
+            oil_6: ['#fbf5ef', '#f2d3ab', '#c69fa5', '#8b6d9c', '#494d7e', '#272744'],
+            midnight_ablaze: ['#ff8274', '#d53c6a', '#7c183c', '#460e2b', '#31051e', '#1f0510', '#130208'],
+            slso8: ['#0d2b45', '#203c56', '#544e68', '#8d697a', '#d08159', '#ffaa5e', '#ffd4a3', '#ffecd6'],
+            rust_gold_8: ['#f6cd26', '#ac6b26', '#563226', '#331c17', '#bb7f57', '#725956', '#393939', '#202020'],
+            blessing: ['#74569b', '#96fbc7', '#f7ffae', '#ffb3cb', '#d8bfd8'],
+            // Additional palettes (from /color pallete/*.png)
+            twilight_5: ['#fbbbad', '#ee8695', '#4a7a96', '#333f58', '#292831'],
+            abyss_9: ['#000000', '#1f123a', '#3a1e7e', '#5429c2', '#5463d9', '#62aadd', '#7fe3dc', '#a0f5c6', '#ddf8d0'],
+            berry_nebula: ['#6ceded', '#6cb9c9', '#6d85a5', '#6e5181', '#6f1d5c', '#4f1446', '#2e0a30', '#0d001a'],
+            chasm: ['#85daeb', '#5fc9e7', '#5fa1e7', '#5f6ee7', '#4c60aa', '#444774', '#32313b', '#463c5e', '#5d4776', '#855395', '#ab58a8', '#ca60ae', '#f3a787', '#f5daa7', '#8dd894', '#5dc190', '#4ab9a3', '#4593a5', '#5efdf7', '#ff5dcc', '#fdfe89', '#ffffff'],
+            citrink: ['#ffffff', '#fcf660', '#b2d942', '#52c33f', '#166e7a', '#254d70', '#252446', '#201533'],
+            cl8uds: ['#fcb08c', '#ef9d7f', '#d6938a', '#b48d92', '#a597a1', '#8fa0bf', '#9aabc9', '#a5b7d4'],
+            eulbink: ['#ffffff', '#0ce6f2', '#0098db', '#1e579c', '#203562', '#252446', '#201533'],
+            gamma_boy: ['#192119', '#252a2d', '#253825', '#324b41', '#4e4b5a', '#476a2f', '#6d7270', '#69835d', '#8c7661', '#8c8980', '#84967b', '#82a641', '#a39b6c', '#a3ad8b', '#b3c392', '#b5db66'],
+            gothic_bit: ['#0e0e12', '#1a1a24', '#333346', '#535373', '#8080a4', '#a6a6bf', '#c1c1d2', '#e6e6ec'],
+            pollen8: ['#73464c', '#ab5675', '#ee6a7c', '#ffa7a5', '#ffe07e', '#ffe7d6', '#72dcbb', '#34acba'],
+            pspixel: ['#f000bd', '#8720cc', '#f08000', '#d2136d', '#f0ec00', '#a54a04', '#a2f000', '#4fb414', '#26f9ff', '#316fea', '#2b53aa', '#011b39', '#2f5b79', '#4f9396', '#9cccb3', '#fff2ca'],
+            red_blood_pain: ['#7e1f23', '#c4181f', '#120a19', '#5e4069'],
+            vanilla_milkshake: ['#28282e', '#6c5671', '#d9c8bf', '#f98284', '#b0a9e4', '#accce4', '#b3e3da', '#feaae4', '#87a889', '#b0eb93', '#e9f59d', '#ffe6c6', '#dea38b', '#ffc384', '#fff7a0', '#fff7e4'],
+            demichrome_2bit: ['#211e20', '#555568', '#a0a08b', '#e9efec'],
+            p31: ['#636663', '#87857c', '#bcad9f', '#f2b888', '#eb9661', '#b55945', '#734c44', '#3d3333', '#593e47', '#7a5859', '#a57855', '#de9f47', '#fdd179', '#fee1b8', '#d4c692', '#a6b04f', '#819447', '#44702d', '#2f4d2f', '#546756', '#89a477', '#a4c5af', '#cae6d9', '#f1f6f0', '#d5d6db', '#bbc3d0', '#96a9c1', '#6c81a1', '#405273', '#303843', '#14233a'],
+        };
+
+        // Optional: load additional palette presets from PNG files in /color pallete/
+        // This lets you drop new palette PNGs into the folder without manually editing the arrays.
+        const PALETTE_IMAGE_SOURCES = [
+            { key: 'moldy_orange_7', label: 'Moldy', src: 'color pallete/moldy-orange-7-32x.png' },
+            { key: 'oil_6', label: 'Oil', src: 'color pallete/oil-6-32x.png' },
+            { key: 'midnight_ablaze', label: 'Midnight', src: 'color pallete/midnight-ablaze-32x.png' },
+            { key: 'slso8', label: 'SLSO8', src: 'color pallete/slso8-32x.png' },
+            { key: 'rust_gold_8', label: 'RustGold', src: 'color pallete/rust-gold-8-32x.png' },
+            { key: 'blessing', label: 'Blessing', src: 'color pallete/blessing-32x.png' },
+            { key: 'twilight_5', label: 'Twilight', src: 'color pallete/twilight-5-32x.png' },
+            { key: 'abyss_9', label: 'Abyss', src: 'color pallete/abyss-9-32x.png' },
+            { key: 'berry_nebula', label: 'Berry', src: 'color pallete/berry-nebula-32x.png' },
+            { key: 'chasm', label: 'Chasm', src: 'color pallete/chasm-32x.png' },
+            { key: 'citrink', label: 'Citrink', src: 'color pallete/citrink-32x.png' },
+            { key: 'cl8uds', label: 'CL8UDS', src: 'color pallete/cl8uds-32x.png' },
+            { key: 'eulbink', label: 'Eulbink', src: 'color pallete/eulbink-32x.png' },
+            { key: 'gamma_boy', label: 'Gamma', src: 'color pallete/gamma-boy-32x.png' },
+            { key: 'gothic_bit', label: 'Gothic', src: 'color pallete/gothic-bit-32x.png' },
+            { key: 'pollen8', label: 'Pollen8', src: 'color pallete/pollen8-32x.png' },
+            { key: 'pspixel', label: 'PSPixel', src: 'color pallete/pspixel-32x.png' },
+            { key: 'red_blood_pain', label: 'Blood', src: 'color pallete/red-blood-pain-32x.png' },
+            { key: 'vanilla_milkshake', label: 'Vanilla', src: 'color pallete/vanilla-milkshake-32x.png' },
+            { key: 'demichrome_2bit', label: 'Demichrome', src: 'color pallete/2bit-demichrome-32x.png' },
+            { key: 'p31', label: '31', src: 'color pallete/31-32x.png' },
+        ];
+
+        function renderPresetBar() {
+            const el = document.getElementById('palette-presets');
+            if (!el) return;
+            el.innerHTML = '';
+            PALETTE_IMAGE_SOURCES.forEach(({ key, label }) => {
+                if (!PALETTE_PRESETS[key]) return;
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'pal-tgt';
+                b.dataset.preset = key;
+                b.textContent = label;
+                if (key === ACTIVE_PALETTE_KEY) b.classList.add('active');
+                el.appendChild(b);
+            });
+        }
+
+        function extractPaletteFromImageData(imgData) {
+            const data = imgData.data;
+            const seen = new Set();
+            const out = [];
+            for (let i = 0; i < data.length; i += 4) {
+                const a = data[i + 3];
+                if (a < 10) continue;
+                const hex = rgbToHex(data[i], data[i + 1], data[i + 2]).toLowerCase();
+                if (!seen.has(hex)) { seen.add(hex); out.push(hex); }
+            }
+            return out;
+        }
+
+        function loadPaletteFromPng(src) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const c = document.createElement('canvas');
+                        c.width = img.width;
+                        c.height = img.height;
+                        const cx = c.getContext('2d', { willReadFrequently: true });
+                        cx.imageSmoothingEnabled = false;
+                        cx.drawImage(img, 0, 0);
+                        const colors = extractPaletteFromImageData(cx.getImageData(0, 0, c.width, c.height));
+                        resolve(colors);
+                    } catch (_) {
+                        resolve(null);
+                    }
+                };
+                img.onerror = () => resolve(null);
+                img.src = encodeURI(src);
+            });
+        }
+
+        async function hydratePalettesFromImages() {
+            for (const p of PALETTE_IMAGE_SOURCES) {
+                const cols = await loadPaletteFromPng(p.src);
+                if (cols && cols.length >= 2) PALETTE_PRESETS[p.key] = cols;
+            }
+        }
+
+        function hexToRgb(hex) {
+            const h = String(hex || '').trim();
+            const m = /^#?([0-9a-f]{6})$/i.exec(h);
+            if (!m) return { r: 0, g: 0, b: 0 };
+            const v = parseInt(m[1], 16);
+            return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+        }
+
+        let ACTIVE_PALETTE_KEY = 'slso8';
+        let ACTIVE_PALETTE = PALETTE_PRESETS[ACTIVE_PALETTE_KEY].slice();
+        let ACTIVE_PALETTE_RGB = ACTIVE_PALETTE.map(hexToRgb);
+
+        function nearestPaletteColorRGB(r, g, b) {
+            let best = 0;
+            let bestD = Infinity;
+            for (let i = 0; i < ACTIVE_PALETTE_RGB.length; i++) {
+                const p = ACTIVE_PALETTE_RGB[i];
+                const dr = r - p.r, dg = g - p.g, db = b - p.b;
+                const d = dr * dr + dg * dg + db * db;
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            return ACTIVE_PALETTE[best];
+        }
+
+        function snapHexToBrand(hex) {
+            const c = hexToRgb(hex);
+            return nearestPaletteColorRGB(c.r, c.g, c.b);
+        }
+
+        function setActivePalettePreset(key) {
+            if (!PALETTE_PRESETS[key]) return;
+            ACTIVE_PALETTE_KEY = key;
+            ACTIVE_PALETTE = PALETTE_PRESETS[key].slice();
+            ACTIVE_PALETTE_RGB = ACTIVE_PALETTE.map(hexToRgb);
+        }
+
+        function paletteLuminance(hex) {
+            const c = hexToRgb(hex);
+            return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+        }
+
+        function getPaletteDarkLight() {
+            let dark = ACTIVE_PALETTE[0];
+            let light = ACTIVE_PALETTE[0];
+            let ld = paletteLuminance(dark);
+            let ll = ld;
+            for (let i = 1; i < ACTIVE_PALETTE.length; i++) {
+                const h = ACTIVE_PALETTE[i];
+                const l = paletteLuminance(h);
+                if (l < ld) { ld = l; dark = h; }
+                if (l > ll) { ll = l; light = h; }
+            }
+            return { dark, light };
+        }
+
+        function renderPaletteGrid(containerId, onPick) {
+            const el = document.getElementById(containerId);
+            if (!el) return;
+            el.innerHTML = '';
+            ACTIVE_PALETTE.forEach(hex => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'pal-swatch';
+                b.style.background = hex;
+                b.setAttribute('aria-label', 'Color ' + hex);
+                b.addEventListener('click', () => onPick(hex));
+                el.appendChild(b);
+            });
+        }
+
         function applyImage() {
             if (!state.srcImage) return;
-            const src = state.srcImage, N = state.imgRes;
-            const aspect = src.width / src.height;
-            const imgCols = Math.round(N * aspect), imgRows = N;
+            const src = state.srcImage;
+            let imgCols, imgRows;
+            if (state.imageManualGrid && state.cols > 1 && state.rows > 1) {
+                imgCols = state.cols;
+                imgRows = state.rows;
+            } else {
+                const N = state.imgRes;
+                const aspect = src.width / src.height;
+                imgCols = Math.round(N * aspect);
+                imgRows = N;
+            }
             state.cols = imgCols; state.rows = imgRows;
-            document.getElementById('d-cols').value = imgCols; document.getElementById('d-cols-v').textContent = imgCols;
-            document.getElementById('d-rows').value = imgRows; document.getElementById('d-rows-v').textContent = imgRows;
+            const dc = document.getElementById('d-cols');
+            const dr = document.getElementById('d-rows');
+            dc.max = Math.max(+dc.max || 40, imgCols);
+            dr.max = Math.max(+dr.max || 40, imgRows);
+            dc.value = imgCols; document.getElementById('d-cols-v').textContent = imgCols;
+            dr.value = imgRows; document.getElementById('d-rows-v').textContent = imgRows;
             const bgCut = state.imgBgCut;
-            const thresh = state.imgThreshold;
-            const fillColor = state.imgFillCol;
-            const fillColor2 = state.imgFillCol2;
-            const edgeColor = state.imgStrokeCol;
             const px = sampleImg(src, imgCols, imgRows);
             const lum = edgeEnhanceLum(px, imgCols, imgRows, state.imgEdge);
             state.cells = Array.from({ length: imgRows }, (_, r) =>
@@ -1818,38 +2530,16 @@
                     const hasAlpha = px[i * 4 + 3] > 30;
                     const l = lum[i];
                     if (!hasAlpha) return null;
-                    if (state.useImageColors) {
-                        if (l >= bgCut) return null;
-                        const R = px[i * 4], G = px[i * 4 + 1], B = px[i * 4 + 2];
-                        return rgbToHex(R, G, B);
-                    }
-                    // Non-image-colors mode:
-                    // 1) אם יש Edge Enhance > 0 – נזהה פיקסלי "קצה" לפי קונטרסט וניתן להם את Edge color
-                    let isEdgePixel = false;
-                    if (state.imgEdge > 0) {
-                        let maxDiff = 0;
-                        if (r > 0) {
-                            const lt = Math.abs(l - lum[(r - 1) * imgCols + c]);
-                            if (lt > maxDiff) maxDiff = lt;
-                        }
-                        if (r < imgRows - 1) {
-                            const lb = Math.abs(l - lum[(r + 1) * imgCols + c]);
-                            if (lb > maxDiff) maxDiff = lb;
-                        }
-                        if (c > 0) {
-                            const ll = Math.abs(l - lum[r * imgCols + c - 1]);
-                            if (ll > maxDiff) maxDiff = ll;
-                        }
-                        if (c < imgCols - 1) {
-                            const lr = Math.abs(l - lum[r * imgCols + c + 1]);
-                            if (lr > maxDiff) maxDiff = lr;
-                        }
-                        const edgeDiffThresh = 5 + state.imgEdge * 5; // יותר חזק → יותר קל לתפוס כקצה
-                        if (maxDiff >= edgeDiffThresh) isEdgePixel = true;
-                    }
-                    if (isEdgePixel) return edgeColor;
+                    // Optional background cutoff (high luminance -> background)
                     if (l >= bgCut) return null;
-                    return l < thresh ? fillColor : fillColor2;
+
+                    const R = px[i * 4 + 0], G = px[i * 4 + 1], B = px[i * 4 + 2];
+                    // Main behavior (Upload/Image): map to FULL active palette (nearest color)
+                    if (state.useImageColors) return nearestPaletteColorRGB(R, G, B);
+
+                    // Fallback: if someone disables image colors, still map to palette by luminance (2-tone)
+                    const { dark: palDark, light: palLight } = getPaletteDarkLight();
+                    return l < state.imgThreshold ? palDark : palLight;
                 })
             );
             state.bg = state.imgBg; state.strokeCol = state.imgStrokeCol; state.fillCol = state.imgFillCol;
@@ -1887,6 +2577,211 @@
                 document.body.removeChild(a);
                 setTimeout(() => URL.revokeObjectURL(url), 2000);
             }, 'image/png');
+        }
+
+        // ═══════════════════════════════════════════════════
+        //  EXPORT FRAME + PREVIEW
+        // ═══════════════════════════════════════════════════
+        function formatExportDate(d) {
+            const dt = d instanceof Date ? d : new Date();
+            const yyyy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function makeFramedCanvas(sourceCanvas, opts) {
+            const title = (opts && opts.title) ? String(opts.title) : 'Pixel Art Maker';
+            const credit = (opts && opts.credit) ? String(opts.credit) : '© shaked kletter';
+            const dateStr = (opts && opts.dateStr) ? String(opts.dateStr) : formatExportDate(new Date());
+
+            const srcW = sourceCanvas.width, srcH = sourceCanvas.height;
+            const pad = Math.round(Math.max(32, Math.min(srcW, srcH) * 0.05));
+            const headerH = Math.round(Math.max(56, Math.min(srcW, srcH) * 0.07));
+            const footerH = Math.round(Math.max(54, Math.min(srcW, srcH) * 0.065));
+            const border = 1;
+
+            const out = document.createElement('canvas');
+            out.width = srcW + pad * 2;
+            out.height = srcH + pad * 2 + headerH + footerH;
+            const ctx = out.getContext('2d');
+
+            // frosted card background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, out.width, out.height);
+            ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+            ctx.lineWidth = border;
+            ctx.strokeRect(0.5, 0.5, out.width - 1, out.height - 1);
+
+            // header
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(border, border, out.width - border * 2, headerH);
+            ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+            ctx.beginPath();
+            ctx.moveTo(border, headerH + border);
+            ctx.lineTo(out.width - border, headerH + border);
+            ctx.stroke();
+
+            // footer
+            const footerTop = out.height - footerH - border;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(border, footerTop, out.width - border * 2, footerH);
+            ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+            ctx.beginPath();
+            ctx.moveTo(border, footerTop);
+            ctx.lineTo(out.width - border, footerTop);
+            ctx.stroke();
+
+            // content area
+            const contentX = pad;
+            const contentY = pad + headerH;
+            const contentW = out.width - pad * 2;
+            const contentH = out.height - pad * 2 - headerH - footerH;
+            // fit source inside content (contain)
+            const s = Math.min(contentW / srcW, contentH / srcH);
+            const dw = Math.round(srcW * s);
+            const dh = Math.round(srcH * s);
+            const dx = contentX + Math.round((contentW - dw) / 2);
+            const dy = contentY + Math.round((contentH - dh) / 2);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(sourceCanvas, dx, dy, dw, dh);
+            ctx.imageSmoothingEnabled = true;
+
+            // typography (mono, like UI)
+            ctx.fillStyle = '#111';
+            ctx.textBaseline = 'middle';
+            ctx.font = `700 ${Math.round(headerH * 0.34)}px "IBM Plex Mono", monospace`;
+            ctx.textAlign = 'center';
+            ctx.fillText(title.toUpperCase(), out.width / 2, headerH / 2 + 1);
+
+            ctx.font = `600 ${Math.round(footerH * 0.28)}px "IBM Plex Mono", monospace`;
+            ctx.textAlign = 'left';
+            ctx.fillText(credit, pad, footerTop + footerH / 2);
+            ctx.textAlign = 'right';
+            ctx.fillText(dateStr, out.width - pad, footerTop + footerH / 2);
+
+            return out;
+        }
+
+        let __pendingExport = null; // { type: 'image', canvas, filename } | { type: 'video', blob, filename, mimeType, url }
+        let __exportModalWired = false;
+
+        function closeExportModal() {
+            const modal = document.getElementById('export-modal');
+            const prev = document.getElementById('export-preview-canvas');
+            const prevVid = document.getElementById('export-preview-video');
+            if (!modal) return;
+            modal.classList.remove('open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (prevVid) {
+                try { prevVid.pause(); } catch (_) { }
+                prevVid.removeAttribute('src');
+                prevVid.style.display = 'none';
+            }
+            if (prev) prev.style.display = 'block';
+
+            if (__pendingExport && __pendingExport.type === 'video') {
+                try { URL.revokeObjectURL(__pendingExport.url); } catch (_) { }
+            }
+            __pendingExport = null;
+        }
+
+        function ensureExportModalWired() {
+            if (__exportModalWired) return;
+            __exportModalWired = true;
+            const modal = document.getElementById('export-modal');
+            const closeBtn = document.getElementById('export-close');
+            const okBtn = document.getElementById('export-confirm');
+            if (!modal || !closeBtn || !okBtn) return;
+
+            closeBtn.addEventListener('click', closeExportModal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeExportModal(); });
+            okBtn.addEventListener('click', () => {
+                if (!__pendingExport) return;
+                if (__pendingExport.type === 'image') {
+                    dl(__pendingExport.canvas, __pendingExport.filename);
+                    closeExportModal();
+                    return;
+                }
+                if (__pendingExport.type === 'video') {
+                    const blob = __pendingExport.blob;
+                    const fileName = __pendingExport.filename;
+                    const mimeType = __pendingExport.mimeType || 'video/webm';
+                    const file = new File([blob], fileName, { type: mimeType });
+                    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 700;
+                    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({ files: [file], title: 'Pixel Art Maker Video' }).catch(function () {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = fileName;
+                            a.click();
+                            setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+                        }).finally(closeExportModal);
+                    } else {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fileName;
+                        a.click();
+                        setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+                        closeExportModal();
+                    }
+                }
+            });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeExportModal(); });
+        }
+
+        function openExportPreview(canvas, filename) {
+            const modal = document.getElementById('export-modal');
+            const prev = document.getElementById('export-preview-canvas');
+            const prevVid = document.getElementById('export-preview-video');
+            if (!modal || !prev) { dl(canvas, filename); return; }
+            ensureExportModalWired();
+
+            __pendingExport = { type: 'image', canvas, filename };
+            if (prevVid) {
+                try { prevVid.pause(); } catch (_) { }
+                prevVid.removeAttribute('src');
+                prevVid.style.display = 'none';
+            }
+            prev.style.display = 'block';
+            prev.width = canvas.width;
+            prev.height = canvas.height;
+            const pctx = prev.getContext('2d');
+            pctx.imageSmoothingEnabled = false;
+            pctx.clearRect(0, 0, prev.width, prev.height);
+            pctx.drawImage(canvas, 0, 0);
+
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function openVideoExportPreview(blob, filename, mimeType) {
+            const modal = document.getElementById('export-modal');
+            const prev = document.getElementById('export-preview-canvas');
+            const prevVid = document.getElementById('export-preview-video');
+            if (!modal || !prevVid) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+                return;
+            }
+            ensureExportModalWired();
+
+            if (prev) prev.style.display = 'none';
+            const url = URL.createObjectURL(blob);
+            __pendingExport = { type: 'video', blob, filename, mimeType: mimeType || 'video/webm', url };
+            prevVid.style.display = 'block';
+            prevVid.src = url;
+            try { prevVid.currentTime = 0; } catch (_) { }
+
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
         }
 
         function openBlobInTab(blob) {
@@ -1978,7 +2873,8 @@
                 ctx.fillRect(0, 0, cnv.width, cnv.height);
                 drawGridToContext(ctx, cnv.width, cnv.height);
             }
-            dl(cnv, `grid_pixels_${Date.now()}.png`);
+            const framed = makeFramedCanvas(cnv, { title: 'Pixel Art Maker', credit: '© shaked kletter' });
+            openExportPreview(framed, `pixel_art_maker_${Date.now()}.png`);
         }
         document.getElementById('dl-pixels').addEventListener('click', downloadPixels);
         document.getElementById('btn-clear').addEventListener('click', () => { resetCells(); renderGrid(); });
@@ -1992,7 +2888,7 @@
 
         const liveState = {
             stream: null, rafId: null,
-            res: 200, threshold: 132, bgCut: 255, edge: 10,
+            res: 20, threshold: 132, bgCut: 255, edge: 10,
             fillCol: '#000000', fillCol2: '#888888', strokeCol: '#000000', bgCol: '#ffffff',
             mirror: true,
             bgPixels: null, bgCols: 0, bgRows: 0, bgDiff: 30,
@@ -2017,17 +2913,56 @@
         const liveOffC = document.createElement('canvas');
         const liveOffX = liveOffC.getContext('2d');
 
+        function getLiveVideoConstraints() {
+            const mode = getLayoutMode();
+            // Use "ideal" constraints; browser may pick closest supported.
+            if (mode === 'mobile') {
+                return {
+                    facingMode: liveState.facingMode,
+                    width: { ideal: 720 },
+                    height: { ideal: 1280 },
+                    aspectRatio: { ideal: 9 / 16 }
+                };
+            }
+            if (mode === 'tablet') {
+                return {
+                    facingMode: liveState.facingMode,
+                    width: { ideal: 1280 },
+                    height: { ideal: 960 },
+                    aspectRatio: { ideal: 4 / 3 }
+                };
+            }
+            // desktop
+            return {
+                facingMode: liveState.facingMode,
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                aspectRatio: { ideal: 16 / 9 }
+            };
+        }
+
         function sampleLiveFrame() {
             if (!liveVideo.videoWidth) return null;
             const N = liveState.res;
             const vw = liveVideo.videoWidth, vh = liveVideo.videoHeight;
-            const targetRatio = getAspectRatioValue(liveState.aspectRatio);
+            // Camera-app behavior: always fit sampling to the actual visible area (#main)
+            // so preview/export/sampling stay aligned across breakpoints.
+            let targetRatio = getAspectRatioValue(liveState.aspectRatio);
+            const mainEl = document.getElementById('main');
+            if (mainEl) {
+                const r = mainEl.getBoundingClientRect();
+                if (r && r.width > 0 && r.height > 0) targetRatio = r.width / r.height;
+            }
             // פורטרט (9:16, 4:5, 1:1, 3:4). רזולוציה אחידה: כמות תאים ~N² בכל היחסים (cols×rows ≈ N²).
             const sqrtR = Math.sqrt(targetRatio);
             const cols = Math.max(2, Math.round(N * sqrtR));
             const rows = Math.max(2, Math.round(N / sqrtR));
             liveOffC.width = cols; liveOffC.height = rows;
-            const scale = Math.min(cols / vw, rows / vh);
+            // Match camera-app feel by breakpoint:
+            // - cover: full screen, crops
+            // - contain: less crop, can letterbox (but reduces "zoom" perception)
+            const scaleMode = getLiveScaleMode();
+            const scale = (scaleMode === 'contain') ? Math.min(cols / vw, rows / vh) : Math.max(cols / vw, rows / vh);
             const drawW = vw * scale, drawH = vh * scale;
             const dstX = (cols - drawW) / 2, dstY = (rows - drawH) / 2;
             liveOffX.fillStyle = liveState.bgCol;
@@ -2064,6 +2999,7 @@
                         const idx = r * cols + c;
                         const l = lum[idx];
                         const i = idx * 4;
+                        const R = px[i], G = px[i + 1], B = px[i + 2];
                         if (useSilhouette) {
                             // Background subtraction: is this pixel foreground?
                             const dr = Math.abs(px[i] - bgPx[i]);
@@ -2071,12 +3007,12 @@
                             const db = Math.abs(px[i + 2] - bgPx[i + 2]);
                             const diff = (dr + dg + db) / 3;
                             if (diff <= liveState.bgDiff) { state.cells[r][c] = null; }
-                            else { state.cells[r][c] = l < liveState.threshold ? liveState.fillCol : liveState.fillCol2; }
+                            else { state.cells[r][c] = nearestPaletteColorRGB(R, G, B); }
                         } else {
                             const alpha = px[i + 3];
                             // Pixels brighter than BG Cutoff → background (null)
                             if (alpha <= 30 || l >= liveState.bgCut) { state.cells[r][c] = null; }
-                            else { state.cells[r][c] = l < liveState.threshold ? liveState.fillCol : liveState.fillCol2; }
+                            else { state.cells[r][c] = nearestPaletteColorRGB(R, G, B); }
                         }
                     }
                 }
@@ -2091,7 +3027,7 @@
         async function startCamera() {
             try {
                 liveState.stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: liveState.facingMode }, audio: false
+                    video: getLiveVideoConstraints(), audio: false
                 });
                 liveVideo.srcObject = liveState.stream;
                 await liveVideo.play();
@@ -2109,6 +3045,8 @@
         }
 
         function switchToMode(mode) {
+            const prevMode = state.mode;
+            const isSwitch = prevMode !== mode;
             if (state.mode === 'live') {
                 stopCamera();
                 if (mode !== 'live') {
@@ -2120,16 +3058,62 @@
                     gridCanvas.style.height = '';
                 }
             }
+            // Reset grid whenever switching between modes
+            if (isSwitch) {
+                state.hideGrid = false;
+                // Leaving Image: clear loaded image so Image starts fresh next time unless user uploads again
+                if (prevMode === 'image') {
+                    state.srcImage = null;
+                    const fn = document.getElementById('file-name');
+                    if (fn) fn.textContent = '';
+                    const fi = document.getElementById('file-input');
+                    if (fi) fi.value = '';
+                }
+                // Reset cells + undo stack
+                resetCells();
+            }
+
+            // Live: remove gap between pixels (restore on exit)
+            if (prevMode === 'live' && mode !== 'live') {
+                if (state.gapBeforeLive !== null) {
+                    state.gap = state.gapBeforeLive;
+                    state.gapBeforeLive = null;
+                    const gapSl = document.getElementById('d-gap');
+                    const gapV = document.getElementById('d-gap-v');
+                    if (gapSl) gapSl.value = String(state.gap);
+                    if (gapV) gapV.textContent = String(state.gap);
+                }
+            }
+            if (mode === 'live') {
+                if (state.gapBeforeLive === null) state.gapBeforeLive = state.gap;
+                state.gap = 0;
+                const gapSl = document.getElementById('d-gap');
+                const gapV = document.getElementById('d-gap-v');
+                if (gapSl) gapSl.value = '0';
+                if (gapV) gapV.textContent = '0';
+            }
             state.mode = mode;
             document.querySelectorAll('.fm-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.mob-fm-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('draw-options').style.display = 'none';
-            document.getElementById('image-options').style.display = 'none';
-            document.getElementById('live-options').style.display = 'none';
+            var drawOpts = document.getElementById('draw-options');
+            var imgOpts = document.getElementById('image-options');
+            var liveOpts = document.getElementById('live-options');
+            if (drawOpts) drawOpts.style.display = 'none';
+            if (imgOpts) imgOpts.style.display = 'none';
+            if (liveOpts) liveOpts.style.display = 'none';
+            var gridSection = document.getElementById('grid-section');
+            // Hide Grid in Live + Upload (image): resolution slider already controls it
+            if (gridSection) gridSection.style.display = (mode === 'live' || mode === 'image') ? 'none' : '';
+            // In Live/Upload we hide Grid section, so renumber Palette to 02 (otherwise keep 03)
+            var palNum = document.querySelector('#palette-section .sec-num');
+            if (palNum) palNum.textContent = (mode === 'live' || mode === 'image') ? '02' : '03';
+            // Upload zone lives under Palette and is shown only in Upload (image) mode
+            var uploadZone = document.getElementById('upload-zone');
+            if (uploadZone) uploadZone.style.display = (mode === 'image') ? '' : 'none';
             if (mode === 'draw') {
-                document.getElementById('fm-draw').classList.add('active');
-                document.getElementById('mob-fm-draw').classList.add('active');
-                document.getElementById('draw-options').style.display = '';
+                var fmDraw = document.getElementById('fm-draw'); if (fmDraw) fmDraw.classList.add('active');
+                var mobFmDraw = document.getElementById('mob-fm-draw'); if (mobFmDraw) mobFmDraw.classList.add('active');
+                if (drawOpts) drawOpts.style.display = '';
                 gridCanvas.style.cursor = 'crosshair';
                 state.hideGrid = false;
                 if (window.innerWidth <= 700) {
@@ -2139,95 +3123,33 @@
                         pan.classList.add('panel-open');
                         bar.classList.add('active');
                         document.body.classList.add('panel-open');
+                        syncPanelOpenHeightVar();
                     }
                 }
                 renderGrid();
             } else if (mode === 'image') {
                 state.hideGrid = false;
-                document.getElementById('fm-image').classList.add('active');
-                document.getElementById('mob-fm-image').classList.add('active');
-                document.getElementById('image-options').style.display = '';
+                var fmImg = document.getElementById('fm-image'); if (fmImg) fmImg.classList.add('active');
+                var mobFmImg = document.getElementById('mob-fm-image'); if (mobFmImg) mobFmImg.classList.add('active');
                 gridCanvas.style.cursor = 'default';
+                // Upload mode: always use palette-mapped image colors; avoid aggressive background cut.
+                state.useImageColors = true;
+                state.imgBgCut = 255;
                 if (state.srcImage) applyImage(); else renderGrid();
             } else if (mode === 'live') {
-                document.getElementById('fm-live').classList.add('active');
-                document.getElementById('mob-fm-live').classList.add('active');
-                document.getElementById('live-options').style.display = '';
+                var fmLive = document.getElementById('fm-live'); if (fmLive) fmLive.classList.add('active');
+                var mobFmLive = document.getElementById('mob-fm-live'); if (mobFmLive) mobFmLive.classList.add('active');
+                if (liveOpts) liveOpts.style.display = '';
                 gridCanvas.style.cursor = 'default';
                 state.hideGrid = false;
+                window.__liveLayoutMode = getLayoutMode();
                 startCamera();
             }
             if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
+            updateDesktopUndoFab();
         }
 
-        // Live controls
-        document.getElementById('l-res').addEventListener('input', function () {
-            liveState.res = +this.value; document.getElementById('l-res-v').textContent = this.value;
-        });
-        document.getElementById('l-bg-cut').addEventListener('input', function () {
-            liveState.bgCut = +this.value; document.getElementById('l-bg-cut-v').textContent = this.value;
-        });
-        document.getElementById('l-thresh').addEventListener('input', function () {
-            liveState.threshold = +this.value; document.getElementById('l-thresh-v').textContent = this.value;
-        });
-        document.getElementById('l-edge').addEventListener('input', function () {
-            liveState.edge = +this.value; document.getElementById('l-edge-v').textContent = this.value;
-        });
-        document.getElementById('l-bg').addEventListener('input', e => { liveState.bgCol = e.target.value; });
-        document.getElementById('l-fill').addEventListener('input', e => { liveState.fillCol = e.target.value; });
-        document.getElementById('l-fill2').addEventListener('input', e => { liveState.fillCol2 = e.target.value; });
-        document.getElementById('l-mirror').addEventListener('change', function () {
-            liveState.mirror = this.checked;
-        });
-        // Silhouette controls
-        document.getElementById('l-bg-diff').addEventListener('input', function () {
-            liveState.bgDiff = +this.value;
-            document.getElementById('l-bg-diff-v').textContent = this.value;
-        });
-        document.getElementById('l-capture-bg').addEventListener('click', () => {
-            const frame = sampleLiveFrame();
-            if (!frame) { alert('Camera not ready yet.'); return; }
-            liveState.bgPixels = frame.px.slice();
-            liveState.bgCols = frame.cols;
-            liveState.bgRows = frame.rows;
-            document.getElementById('l-bg-status').textContent = '✓ Background captured';
-            document.getElementById('l-bg-status').style.color = 'var(--text)';
-        });
-        document.getElementById('l-clear-bg').addEventListener('click', () => {
-            liveState.bgPixels = null;
-            document.getElementById('l-bg-status').textContent = 'No background captured';
-            document.getElementById('l-bg-status').style.color = 'var(--muted)';
-        });
-        document.getElementById('l-snapshot').addEventListener('click', () => {
-            state.exportRatio = liveState.aspectRatio || '9:16';
-            var cnv;
-            if (liveCoverCanvas && liveCoverCanvas.width > 0 && liveCoverCanvas.height > 0) {
-                cnv = document.createElement('canvas');
-                cnv.width = liveCoverCanvas.width;
-                cnv.height = liveCoverCanvas.height;
-                cnv.getContext('2d').drawImage(liveCoverCanvas, 0, 0);
-            } else {
-                var dim = LIVE_EXPORT_DIMENSIONS[state.exportRatio] || LIVE_EXPORT_DIMENSIONS['9:16'];
-                cnv = document.createElement('canvas');
-                cnv.width = dim.w;
-                cnv.height = dim.h;
-                var ctx = cnv.getContext('2d');
-                ctx.fillStyle = state.bg;
-                ctx.fillRect(0, 0, dim.w, dim.h);
-                drawGridToContext(ctx, dim.w, dim.h);
-            }
-            dl(cnv, 'pixelmaker_capture_' + Date.now() + '.png');
-            state.hideGrid = true;
-            stopCamera();
-            switchToMode('draw');
-            state.hideGrid = true;
-            var dc = document.getElementById('d-cols'), dr = document.getElementById('d-rows');
-            dc.value = state.cols; dc.max = Math.max(40, state.cols);
-            dr.value = state.rows; dr.max = Math.max(40, state.rows);
-            document.getElementById('d-cols-v').textContent = state.cols;
-            document.getElementById('d-rows-v').textContent = state.rows;
-            renderGrid();
-        });
+        // Live colors are derived from the selected palette preset
 
         // ═══════════════════════════════════════════════════
         //  MOBILE: Panel toggle
@@ -2243,12 +3165,13 @@
         // - Live: show shutter + flip + ratio + download
         // - Draw/Image: show download only
         function updateMobileButtonsForMode() {
-            const isSmall = window.innerWidth <= 700;
+            const isSmall = isMobileLayout();
             var modeBtn = document.getElementById('mob-capture-mode');
             if (!isSmall) {
                 mobShutter.style.display = 'none';
                 mobFlip.style.display = 'none';
                 mobDl.style.display = 'none';
+                if (mobUndo) mobUndo.style.display = 'none';
                 if (mobRatio) mobRatio.style.display = 'none';
                 if (modeBtn) modeBtn.style.display = 'none';
                 return;
@@ -2259,22 +3182,24 @@
                 mobShutter.style.display = 'none';
                 mobFlip.style.display = 'none';
                 mobDl.style.display = 'none';
+                if (mobUndo) mobUndo.style.display = 'none';
                 if (mobRatio) mobRatio.style.display = 'none';
                 if (modeBtn) modeBtn.style.display = 'none';
                 return;
             }
 
-            // Download תמיד זמין במובייל
-            mobDl.style.display = 'block';
+            // Mobile download FAB:
+            // - In Live we download via the preview modal, so hide this button.
+            // - In other modes keep it available.
+            mobDl.style.display = (state.mode === 'live') ? 'none' : 'block';
+            // Undo only in Draw (Upload doesn't need undo)
+            if (mobUndo) mobUndo.style.display = (state.mode === 'draw') ? 'flex' : 'none';
 
             if (state.mode === 'live') {
                 mobShutter.style.display = 'block';
                 mobFlip.style.display = 'flex';
-                if (mobRatio) {
-                    mobRatio.style.display = 'flex';
-                    mobRatio.setAttribute('aria-label', 'Aspect ratio ' + liveState.aspectRatio);
-                    mobRatio.title = liveState.aspectRatio;
-                }
+                // Ratio button disabled on mobile: Live fits device automatically
+                if (mobRatio) mobRatio.style.display = 'none';
                 if (modeBtn) {
                     modeBtn.style.display = 'flex';
                     modeBtn.textContent = state.captureMode === 'video' ? 'video' : 'image';
@@ -2287,14 +3212,47 @@
             }
         }
 
-        panelToggleBar.addEventListener('click', () => {
+        function updateDesktopUndoFab() {
+            const show = (getLayoutMode() === 'desktop' && state.mode === 'draw');
+            document.body.classList.toggle('show-desktop-undo', !!show);
+        }
+
+        function toggleMobilePanel() {
             panel.classList.toggle('panel-open');
             var isOpen = panel.classList.contains('panel-open');
             panelToggleBar.classList.toggle('active', isOpen);
             document.body.classList.toggle('panel-open', isOpen);
             updateMobileButtonsForMode();
-            if (!state.editorMode) renderGrid();
+            // Update CSS var with actual panel height to avoid whitespace gaps
+            requestAnimationFrame(() => {
+                const h = isOpen ? Math.round(panel.getBoundingClientRect().height) : 0;
+                document.documentElement.style.setProperty('--panel-open-h', h + 'px');
+                if (!state.editorMode) renderGrid();
+            });
+            // Panel opens with a transition; resync after it settles so canvas always moves up.
+            if (isOpen) {
+                setTimeout(() => {
+                    syncPanelOpenHeightVar();
+                    if (!state.editorMode) renderGrid();
+                }, 380);
+            }
+        }
+
+        function syncPanelOpenHeightVar() {
+            try {
+                if (!panel) return;
+                const isOpen = panel.classList.contains('panel-open') || document.body.classList.contains('panel-open');
+                const h = isOpen ? Math.round(panel.getBoundingClientRect().height) : 0;
+                document.documentElement.style.setProperty('--panel-open-h', h + 'px');
+            } catch (_) { }
+        }
+
+        if (panelToggleBar) panelToggleBar.addEventListener('click', () => {
+            toggleMobilePanel();
         });
+        // Ensure initial layout uses correct panel height (if panel starts open)
+        syncPanelOpenHeightVar();
+        try { window.__layoutMode = getLayoutMode(); } catch (_) { }
 
         // ═══════════════════════════════════════════════════
         //  MOBILE: Camera buttons
@@ -2305,25 +3263,28 @@
             if (state.mode !== 'live') return;
             liveState.facingMode = liveState.facingMode === 'user' ? 'environment' : 'user';
             liveState.mirror = (liveState.facingMode === 'user');
-            var mirrorCb = document.getElementById('l-mirror');
-            if (mirrorCb) mirrorCb.checked = liveState.mirror;
             stopCamera();
             startCamera();
         }
-        mobFlip.addEventListener('click', flipCamera);
-        document.getElementById('l-flip-cam').addEventListener('click', flipCamera);
+        if (mobFlip) mobFlip.addEventListener('click', flipCamera);
+        var flipCamBtn = document.getElementById('l-flip-cam');
+        if (flipCamBtn) flipCamBtn.addEventListener('click', flipCamera);
 
         function cycleAspectRatio() {
-            if (liveState.aspectRatio === '9:16') liveState.aspectRatio = '4:5';
-            else if (liveState.aspectRatio === '4:5') liveState.aspectRatio = '1:1';
-            else if (liveState.aspectRatio === '1:1') liveState.aspectRatio = (isMobile ? '9:16' : '16:9');
-            else liveState.aspectRatio = '9:16';
+            const orderMobile = ['9:16', '4:5', '3:4', '1:1'];
+            const orderDesktop = ['16:9', '4:5', '3:4', '1:1'];
+            const order = isMobile ? orderMobile : orderDesktop;
+
+            const idx = order.indexOf(liveState.aspectRatio);
+            liveState.aspectRatio = order[(idx >= 0 ? idx + 1 : 0) % order.length];
             liveCoverCanvas = null;
             liveCoverLastRatio = null;
             if (mobRatio) {
                 mobRatio.setAttribute('aria-label', 'Aspect ratio ' + liveState.aspectRatio);
                 mobRatio.title = liveState.aspectRatio;
             }
+            // Force immediate refresh (helps when CSS/layout caches)
+            if (state.mode === 'live') renderGrid();
         }
         if (mobRatio) mobRatio.addEventListener('click', cycleAspectRatio);
 
@@ -2337,6 +3298,8 @@
         var recordedChunks = [];
         var liveRecordCanvas = null;
         var liveRecordCtx = null;
+        var liveRecordInnerCanvas = null;
+        var liveRecordInnerCtx = null;
         var liveRecordInterval = null;
         var LIVE_RECORD_FPS = 30;
 
@@ -2355,6 +3318,8 @@
                 mobShutter.classList.remove('recording');
                 liveRecordCanvas = null;
                 liveRecordCtx = null;
+                liveRecordInnerCanvas = null;
+                liveRecordInnerCtx = null;
                 return;
             }
             recordedChunks = [];
@@ -2364,7 +3329,15 @@
             liveRecordCanvas.width = dim.w;
             liveRecordCanvas.height = dim.h;
             liveRecordCtx = liveRecordCanvas.getContext('2d');
-            drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
+            // Record with frame: draw mosaic into an inner canvas, then composite with card template
+            liveRecordInnerCanvas = document.createElement('canvas');
+            const innerPad = Math.round(Math.max(32, Math.min(dim.w, dim.h) * 0.05));
+            const innerHeader = Math.round(Math.max(56, Math.min(dim.w, dim.h) * 0.07));
+            const innerFooter = Math.round(Math.max(54, Math.min(dim.w, dim.h) * 0.065));
+            liveRecordInnerCanvas.width = Math.max(1, dim.w - innerPad * 2);
+            liveRecordInnerCanvas.height = Math.max(1, dim.h - innerPad * 2 - innerHeader - innerFooter);
+            liveRecordInnerCtx = liveRecordInnerCanvas.getContext('2d');
+            drawGridToContext(liveRecordInnerCtx, liveRecordInnerCanvas.width, liveRecordInnerCanvas.height);
             var mime = 'video/webm';
             if (MediaRecorder.isTypeSupported('video/mp4')) mime = 'video/mp4';
             else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) mime = 'video/webm;codecs=vp9';
@@ -2380,25 +3353,16 @@
                 mobShutter.classList.remove('recording');
                 liveRecordCanvas = null;
                 liveRecordCtx = null;
+                liveRecordInnerCanvas = null;
+                liveRecordInnerCtx = null;
                 if (recordedChunks.length === 0) return;
                 var rec = liveVideoRecorder;
                 var mimeType = rec.mimeType || 'video/webm';
                 var ext = mimeType.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
                 var blob = new Blob(recordedChunks, { type: mimeType });
                 var fileName = 'pixelmaker_' + Date.now() + '.' + ext;
-                var file = new File([blob], fileName, { type: mimeType });
-                var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-                if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({ files: [file], title: 'Pixel Maker Video' }).then(function () {
-                        liveVideoRecorder = null;
-                    }).catch(function () {
-                        downloadVideoFile(blob, fileName);
-                        liveVideoRecorder = null;
-                    });
-                } else {
-                    downloadVideoFile(blob, fileName);
-                    liveVideoRecorder = null;
-                }
+                openVideoExportPreview(blob, fileName, mimeType);
+                liveVideoRecorder = null;
             };
             function downloadVideoFile(blob, fileName) {
                 var url = URL.createObjectURL(blob);
@@ -2411,19 +3375,31 @@
             liveVideoRecorder.start(1000 / LIVE_RECORD_FPS);
             liveRecordInterval = setInterval(function () {
                 if (liveRecordCanvas && liveRecordCtx && liveVideoRecorder && liveVideoRecorder.state === 'recording') {
-                    drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
+                    // redraw inner mosaic
+                    if (liveRecordInnerCanvas && liveRecordInnerCtx) {
+                        drawGridToContext(liveRecordInnerCtx, liveRecordInnerCanvas.width, liveRecordInnerCanvas.height);
+                        // composite framed card (outer) using the current inner mosaic
+                        const tmp = makeFramedCanvas(liveRecordInnerCanvas, { title: 'Pixel Art Maker', credit: '© shaked kletter' });
+                        // tmp size may differ slightly due to rounding; fit into record canvas
+                        liveRecordCtx.imageSmoothingEnabled = true;
+                        liveRecordCtx.clearRect(0, 0, liveRecordCanvas.width, liveRecordCanvas.height);
+                        liveRecordCtx.drawImage(tmp, 0, 0, liveRecordCanvas.width, liveRecordCanvas.height);
+                    } else {
+                        drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
+                    }
                 }
             }, 1000 / LIVE_RECORD_FPS);
             mobShutter.classList.add('recording');
         }
 
         // Shutter: in live mode → snapshot (image) or start/stop video; in draw mode → no-op
-        mobShutter.addEventListener('click', () => {
+        if (mobShutter) mobShutter.addEventListener('click', () => {
             if (state.mode === 'live') {
                 if (state.captureMode === 'video') {
                     toggleVideoRecording();
                 } else {
-                    state.exportRatio = liveState.aspectRatio || '9:16';
+                    // Live export uses what's on screen (liveCoverCanvas)
+                    state.exportRatio = null;
                     var cnv;
                     if (liveCoverCanvas && liveCoverCanvas.width > 0 && liveCoverCanvas.height > 0) {
                         cnv = document.createElement('canvas');
@@ -2440,23 +3416,15 @@
                         ctx.fillRect(0, 0, dim.w, dim.h);
                         drawGridToContext(ctx, dim.w, dim.h);
                     }
-                    dl(cnv, 'pixelmaker_capture_' + Date.now() + '.png');
-                    state.hideGrid = true;
-                    stopCamera();
-                    switchToMode('draw');
-                    state.hideGrid = true;
-                    var dc = document.getElementById('d-cols'), dr = document.getElementById('d-rows');
-                    dc.value = state.cols; dc.max = Math.max(40, state.cols);
-                    dr.value = state.rows; dr.max = Math.max(40, state.rows);
-                    document.getElementById('d-cols-v').textContent = state.cols;
-                    document.getElementById('d-rows-v').textContent = state.rows;
-                    renderGrid();
+                    const framed = makeFramedCanvas(cnv, { title: 'Pixel Art Maker', credit: '© shaked kletter' });
+                    openExportPreview(framed, 'pixel_art_maker_capture_' + Date.now() + '.png');
+                    // Stay in Live after capture (don't stop camera / don't switch modes)
                 }
             }
         });
 
         // Download: always downloads the pixel fill image
-        mobDl.addEventListener('click', downloadPixels);
+        if (mobDl) mobDl.addEventListener('click', downloadPixels);
 
 
         // ═══════════════════════════════════════════════════
@@ -2506,6 +3474,51 @@
         gridCanvas.style.cursor = 'crosshair';
         renderGrid();
         if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
+
+        // Palette UI wiring (Draw only: pick paint color)
+        function wireDrawPalette() {
+            renderPaletteGrid('draw-palette', (hex) => {
+                state.fillCol = hex;
+                renderGrid();
+            });
+        }
+        wireDrawPalette();
+
+        function syncPresetButtons() {
+            const el = document.getElementById('palette-presets');
+            if (!el) return;
+            el.querySelectorAll('[data-preset]').forEach(b => {
+                b.classList.toggle('active', b.getAttribute('data-preset') === ACTIVE_PALETTE_KEY);
+            });
+        }
+
+        function bindPresetBar(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('click', (e) => {
+                // robust: avoid relying on Element.closest
+                let btn = e.target;
+                while (btn && btn !== el) {
+                    if (btn.dataset && btn.dataset.preset) break;
+                    btn = btn.parentElement;
+                }
+                if (!btn || btn === el || !btn.dataset || !btn.dataset.preset) btn = null;
+                if (!btn) return;
+                const key = btn.dataset.preset;
+                setActivePalettePreset(key);
+                // choose default paint color = palette dark
+                state.fillCol = getPaletteDarkLight().dark;
+                wireDrawPalette();
+                if (state.mode === 'image' && state.srcImage) applyImage(); else renderGrid();
+                syncPresetButtons();
+            });
+        }
+
+        // Palette presets: build buttons from available presets, then hydrate from PNGs if present
+        renderPresetBar();
+        bindPresetBar('palette-presets');
+        syncPresetButtons();
+        // Palettes are embedded; no async hydration needed.
 
         // PWA: register service worker for installability
         if ('serviceWorker' in navigator) {
