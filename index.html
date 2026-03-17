@@ -1741,11 +1741,19 @@
             }
 
             if (isLive) {
-                // Live preview frame follows the UI area (mobile = 9:16-ish, desktop = whatever #main is),
-                // while the camera content is handled upstream in sampleLiveFrame (contain/cover).
-                var cw = Math.max(1, W);
-                var ch = Math.max(1, H);
-                var coverKey = 'screen:' + cw + 'x' + ch;
+                // Live frame:
+                // - Mobile: force 9:16 (portrait) inside the available area (no stretch, no crop of frame)
+                // - Tablet/Desktop: use the available area ratio
+                const targetRatio = isMobileLayout() ? (9 / 16) : (W / H);
+                var cw, ch;
+                if ((W / H) >= targetRatio) {
+                    ch = Math.max(1, H);
+                    cw = Math.max(1, Math.round(ch * targetRatio));
+                } else {
+                    cw = Math.max(1, W);
+                    ch = Math.max(1, Math.round(cw / targetRatio));
+                }
+                var coverKey = 'frame:' + (isMobileLayout() ? '9:16' : 'area') + ':' + cw + 'x' + ch;
                 if (!liveCoverCanvas || liveCoverLastRatio !== coverKey) {
                     liveCoverCanvas = document.createElement('canvas');
                     liveCoverLastRatio = coverKey;
@@ -1760,7 +1768,7 @@
                 gctx.fillStyle = state.bg;
                 gctx.fillRect(0, 0, W, H);
                 gctx.imageSmoothingEnabled = false;
-                gctx.drawImage(liveCoverCanvas, 0, 0, W, H);
+                gctx.drawImage(liveCoverCanvas, Math.round((W - cw) / 2), Math.round((H - ch) / 2), cw, ch);
                 gctx.imageSmoothingEnabled = true;
                 return;
             }
