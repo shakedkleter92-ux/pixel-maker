@@ -1454,10 +1454,13 @@
     <button id="mob-ratio" aria-label="Aspect ratio" type="button" style="display:none">
         <img src="ratio_icon.png" alt="" width="22" height="22">
     </button>
-    <!-- Camera flip: small circle top-right -->
+    <!-- Camera flip: small circle -->
     <button id="mob-flip" aria-label="Flip camera" style="display:none">
         <img src="camera-switch.svg" alt="" width="22" height="22">
     </button>
+    <!-- Camera rotate: cycles 0/90/180/270 -->
+    <button id="mob-rotate-cam" aria-label="Rotate camera" type="button"
+        style="display:none; position:fixed; width:44px; height:44px; bottom:86px; right:70px; z-index:85; border:1px solid #000; background:#fff; font-size:20px; line-height:1; cursor:pointer; border-radius:0;">↻</button>
     <!-- Download: small circle bottom-left -->
     <button id="mob-capture-mode" aria-label="Capture mode" type="button">image</button>
     <button id="mob-download" aria-label="Download"></button>
@@ -2983,7 +2986,7 @@
             mirror: true,
             bgPixels: null, bgCols: 0, bgRows: 0, bgDiff: 30,
             facingMode: 'user',
-            aspectRatio: '9:16', // '9:16' | '4:5' | '1:1' | '3:4' | '16:9'
+            aspectRatio: '9:16',
         };
 
         function getAspectRatioValue(ratioKey) {
@@ -3076,54 +3079,29 @@
             if (!liveVideo.videoWidth) return null;
             const N = liveState.res;
             const vw = liveVideo.videoWidth, vh = liveVideo.videoHeight;
-            // Mobile: build the grid to the UI ratio so it fills the portrait frame.
-            // Camera pixels are still drawn "contain" into that grid (no crop).
             const mode = getLayoutMode();
+
+            // Grid ratio: on mobile always use the desired aspect ratio (9:16 default)
+            // so the grid fills the portrait frame correctly.
             let targetRatio = vw / vh;
             if (mode === 'mobile') {
                 let desiredAR = getAspectRatioValue(liveState.aspectRatio || '9:16');
-                if (desiredAR > 1) desiredAR = 1 / desiredAR;
+                if (desiredAR > 1) desiredAR = 1 / desiredAR; // always portrait (< 1)
                 targetRatio = desiredAR;
             }
-            // Resolution rule: keep total cells ~ N^2 (cols×rows ≈ N²).
+
+            // Grid dimensions (cols × rows ≈ N²)
             const sqrtR = Math.sqrt(targetRatio);
             const cols = Math.max(2, Math.round(N * sqrtR));
             const rows = Math.max(2, Math.round(N / sqrtR));
             liveOffC.width = cols; liveOffC.height = rows;
-            // Fallback: if iOS delivers a landscape buffer while UI is portrait, rotate for sampling.
-            // This does NOT crop and does NOT affect the camera stream, only the canvas sampling.
-            const wantPortraitUI = (mode === 'mobile') && (window.innerHeight >= window.innerWidth);
-            const needsRotate = wantPortraitUI && (vw > vh);
-            let srcEl = liveVideo;
-            let sw = vw;
-            let sh = vh;
-            if (needsRotate) {
-                // Pick direction by device orientation angle (0/180 portrait, 90/270 landscape).
-                // Front camera (user) — iOS delivers landscape buffer needing +90° (CW) rotation.
-                // Back camera (environment) — needs -90° (CCW) rotation.
-                // Flip if needed based on screen orientation.
-                const ang = ((getScreenOrientationAngle() % 360) + 360) % 360;
-                const isFront = liveState.facingMode === 'user';
-                // Portrait (ang 0|180): front needs +1 (CW), back needs -1 (CCW)
-                // Landscape (ang 90|270): opposite
-                const baseDir = isFront ? 1 : -1;
-                const dir = (ang === 0 || ang === 180) ? baseDir : -baseDir;
-                sw = vh;
-                sh = vw;
-                liveRotC.width = sw;
-                liveRotC.height = sh;
-                liveRotX.save();
-                liveRotX.clearRect(0, 0, sw, sh);
-                liveRotX.translate(sw / 2, sh / 2);
-                liveRotX.rotate(dir * (Math.PI / 2));
-                liveRotX.drawImage(liveVideo, -vw / 2, -vh / 2, vw, vh);
-                liveRotX.restore();
-                srcEl = liveRotC;
-            }
 
-            // Contain: show full camera frame (no crop), allow letterbox.
-            const scale = Math.min(cols / sw, rows / sh);
-            const drawW = sw * scale, drawH = sh * scale;
+            // Draw video into the downsampled canvas.
+            // iOS Safari auto-applies EXIF/metadata rotation when drawing a video element,
+            // so we do NOT rotate manually — a manual rotation would double-flip the image.
+            // We only apply a horizontal mirror for the front camera (selfie preview).
+            const scale = Math.min(cols / vw, rows / vh);
+            const drawW = vw * scale, drawH = vh * scale;
             const dstX = (cols - drawW) / 2, dstY = (rows - drawH) / 2;
             liveOffX.fillStyle = liveState.bgCol;
             liveOffX.fillRect(0, 0, cols, rows);
@@ -3131,10 +3109,10 @@
                 liveOffX.save();
                 liveOffX.translate(dstX + drawW, dstY);
                 liveOffX.scale(-1, 1);
-                liveOffX.drawImage(srcEl, 0, 0, sw, sh, 0, 0, drawW, drawH);
+                liveOffX.drawImage(liveVideo, 0, 0, vw, vh, 0, 0, drawW, drawH);
                 liveOffX.restore();
             } else {
-                liveOffX.drawImage(srcEl, 0, 0, sw, sh, dstX, dstY, drawW, drawH);
+                liveOffX.drawImage(liveVideo, 0, 0, vw, vh, dstX, dstY, drawW, drawH);
             }
             return { px: liveOffX.getImageData(0, 0, cols, rows).data, cols, rows };
         }
