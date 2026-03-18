@@ -1443,7 +1443,7 @@
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
         <span>Pixel Maker <span id="build-tag"
-                style="opacity:.65; font-size:11px; margin-left:6px;">v28</span></span>
+                style="opacity:.65; font-size:11px; margin-left:6px;">v29</span></span>
         <button id="panel-toggle-btn" aria-label="Toggle controls">☰</button>
     </div>
 
@@ -3014,6 +3014,7 @@
             bgPixels: null, bgCols: 0, bgRows: 0, bgDiff: 30,
             facingMode: 'user',
             aspectRatio: '9:16',
+            viewZoom: 1, // software preview zoom (1 = normal). <1 shows more (less crop).
         };
 
         // Single source of truth: target preview ratio by breakpoint.
@@ -3157,9 +3158,11 @@
             // "Soft cover" on mobile to reduce perceived zoom: interpolate between contain and cover.
             // 0 = contain (no crop), 1 = cover (full fill). We pick a middle ground.
             const softCover = isMobileLayout() ? 0.65 : 1;
-            const scale = (scaleMode === 'cover')
+            let scale = (scaleMode === 'cover')
                 ? (containScale + (coverScale - containScale) * softCover)
                 : containScale;
+            // Additional software zoom-out (requested): 0.5 = show more than contain (adds borders).
+            scale *= (liveState.viewZoom || 1);
             const drawW = sw * scale, drawH = sh * scale;
             const dstX = (cols - drawW) / 2, dstY = (rows - drawH) / 2;
             __liveDebug = { vw, vh, sw, sh, cols, rows, drawW: Math.round(drawW), drawH: Math.round(drawH), dstX: Math.round(dstX), dstY: Math.round(dstY), needsRotate: !!needsRotate, target: targetRatio };
@@ -3228,6 +3231,8 @@
                 liveState.aspectRatio = getLiveTargetRatioKey();
                 liveCoverCanvas = null;
                 liveCoverLastRatio = null;
+                // Requested zoom-out test on mobile
+                liveState.viewZoom = isMobileLayout() ? 0.5 : 1;
 
                 liveState.stream = await navigator.mediaDevices.getUserMedia({
                     video: getLiveVideoConstraints(), audio: false
@@ -3240,6 +3245,17 @@
                         const s = (typeof vt.getSettings === 'function') ? vt.getSettings() : null;
                         const c = (typeof vt.getConstraints === 'function') ? vt.getConstraints() : null;
                         const cap = (typeof vt.getCapabilities === 'function') ? vt.getCapabilities() : null;
+                        // Try hardware zoom if supported below 1 (rare; most devices min=1)
+                        try {
+                            if (isMobileLayout() && cap && cap.zoom && typeof vt.applyConstraints === 'function') {
+                                const zmin = (typeof cap.zoom.min === 'number') ? cap.zoom.min : 1;
+                                const zmax = (typeof cap.zoom.max === 'number') ? cap.zoom.max : 1;
+                                const targetZoom = 0.5;
+                                if (targetZoom >= zmin && targetZoom <= zmax) {
+                                    await vt.applyConstraints({ advanced: [{ zoom: targetZoom }] });
+                                }
+                            }
+                        } catch (_) { }
                         __liveTrackDebug = { settings: s, constraints: c, capabilities: cap };
                     } else {
                         __liveTrackDebug = null;
@@ -3753,7 +3769,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v28';
+            const __BUILD = 'v29';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3787,7 +3803,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=28';
+            const __SW_URL = 'sw.js?v=29';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
