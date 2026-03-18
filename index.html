@@ -460,7 +460,8 @@
         #mob-capture-mode,
         #mob-download,
         #mob-undo,
-        #mob-ratio {
+        #mob-ratio,
+        #mob-zoom {
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
         }
@@ -477,7 +478,8 @@
         #mob-capture-mode:active,
         #mob-download:active,
         #mob-undo:active,
-        #mob-ratio:active {
+        #mob-ratio:active,
+        #mob-zoom:active {
             transform: scale(.97);
         }
 
@@ -495,7 +497,8 @@
             #mob-capture-mode:hover,
             #mob-download:hover,
             #mob-undo:hover,
-            #mob-ratio:hover {
+            #mob-ratio:hover,
+            #mob-zoom:hover {
                 transform: scale(1.02);
                 background: var(--surface);
             }
@@ -1314,6 +1317,66 @@
             display: block;
         }
 
+        /* Live zoom FAB — bottom-right (Live only) */
+        #mob-zoom {
+            position: fixed;
+            width: 56px;
+            height: 44px;
+            bottom: 86px;
+            right: 20px;
+            border-radius: 0;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text);
+            z-index: 140;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        #mob-zoom-pop {
+            position: fixed;
+            right: 20px;
+            bottom: 136px;
+            width: 160px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 141;
+        }
+
+        #mob-zoom-slider {
+            width: 100%;
+        }
+
+        #mob-zoom-ticks {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        #mob-zoom-ticks button {
+            flex: 1;
+            padding: 8px 0;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
         /* Desktop: show floating undo outside panel (Draw) */
         @media (min-width: 1025px) {
             #mob-undo {
@@ -1443,7 +1506,7 @@
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
         <span>Pixel Maker <span id="build-tag"
-                style="opacity:.65; font-size:11px; margin-left:6px;">v32</span></span>
+                style="opacity:.65; font-size:11px; margin-left:6px;">v33</span></span>
         <button id="panel-toggle-btn" aria-label="Toggle controls">☰</button>
     </div>
 
@@ -1464,6 +1527,17 @@
     <!-- Download: small circle bottom-left -->
     <button id="mob-capture-mode" aria-label="Capture mode" type="button">image</button>
     <button id="mob-download" aria-label="Download"></button>
+    <!-- Live Zoom: small button bottom-right (Live only) -->
+    <button id="mob-zoom" aria-label="Zoom" type="button" style="display:none">1×</button>
+    <div id="mob-zoom-pop" aria-hidden="true" style="display:none">
+        <input type="range" id="mob-zoom-slider" min="1" max="3" step="0.01" value="1" />
+        <div id="mob-zoom-ticks">
+            <button type="button" data-z="1">1×</button>
+            <button type="button" data-z="2">2×</button>
+            <button type="button" data-z="3">3×</button>
+        </div>
+    </div>
+
     <!-- Undo: small circle bottom-right (Draw/Image) -->
     <button id="mob-undo" aria-label="Undo" type="button" style="display:none">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
@@ -3071,22 +3145,82 @@
                 z.addEventListener('input', () => {
                     // Camera-app behavior: zoom is >= 1 (no zoom-out that reveals borders).
                     const val = Math.max(1, Math.min(8, parseFloat(z.value || '1') || 1));
-                    liveState.userZoom = val;
-                    if (zv) zv.textContent = val.toFixed(2);
-                    // Try hardware zoom if supported and within bounds
-                    try {
-                        const vt = liveState.stream && liveState.stream.getVideoTracks ? liveState.stream.getVideoTracks()[0] : null;
-                        const caps = __liveZoomCaps;
-                        if (vt && caps && typeof vt.applyConstraints === 'function') {
-                            const zmin = (typeof caps.min === 'number') ? caps.min : 1;
-                            const zmax = (typeof caps.max === 'number') ? caps.max : 1;
-                            if (val >= zmin && val <= zmax) {
-                                vt.applyConstraints({ advanced: [{ zoom: val }] }).catch(() => { });
-                            }
-                        }
-                    } catch (_) { }
+                    setZoomUIValue(val);
+                    applyHardwareZoomIfPossible(val);
                 });
             }
+        }
+
+        function setZoomUIValue(val) {
+            const z = Math.max(1, Math.min(8, Number(val) || 1));
+            liveState.userZoom = z;
+            const fab = document.getElementById('mob-zoom');
+            if (fab) fab.textContent = z.toFixed(2).replace(/\.00$/, '') + '×';
+            const slider = document.getElementById('mob-zoom-slider');
+            if (slider) slider.value = String(z);
+            const zEl = document.getElementById('live-zoom');
+            const zVEl = document.getElementById('live-zoom-v');
+            if (zEl) zEl.value = String(z);
+            if (zVEl) zVEl.textContent = z.toFixed(2);
+        }
+
+        function applyHardwareZoomIfPossible(val) {
+            try {
+                const vt = liveState.stream && liveState.stream.getVideoTracks ? liveState.stream.getVideoTracks()[0] : null;
+                const caps = __liveZoomCaps;
+                if (!vt || !caps || typeof vt.applyConstraints !== 'function') return;
+                const zmin = (typeof caps.min === 'number') ? caps.min : 1;
+                const zmax = (typeof caps.max === 'number') ? caps.max : 1;
+                if (val >= zmin && val <= zmax) {
+                    vt.applyConstraints({ advanced: [{ zoom: val }] }).catch(() => { });
+                }
+            } catch (_) { }
+        }
+
+        function wireMobileZoomUI() {
+            const fab = document.getElementById('mob-zoom');
+            const pop = document.getElementById('mob-zoom-pop');
+            const slider = document.getElementById('mob-zoom-slider');
+            const ticks = document.getElementById('mob-zoom-ticks');
+            if (!fab || !pop || !slider) return;
+            if (fab.__wired) return;
+            fab.__wired = true;
+
+            function openPop() { pop.style.display = 'block'; pop.setAttribute('aria-hidden', 'false'); }
+            function closePop() { pop.style.display = 'none'; pop.setAttribute('aria-hidden', 'true'); }
+            function togglePop() { (pop.style.display === 'block') ? closePop() : openPop(); }
+
+            fab.addEventListener('click', (e) => { e.stopPropagation(); togglePop(); });
+            document.addEventListener('click', (e) => {
+                if (pop.style.display !== 'block') return;
+                if (e.target === pop || pop.contains(e.target) || e.target === fab) return;
+                closePop();
+            });
+
+            slider.addEventListener('input', () => {
+                const v = parseFloat(slider.value || '1') || 1;
+                setZoomUIValue(v);
+                applyHardwareZoomIfPossible(v);
+            });
+
+            if (ticks) {
+                ticks.addEventListener('click', (e) => {
+                    let btn = e.target;
+                    while (btn && btn !== ticks) {
+                        if (btn.dataset && btn.dataset.z) break;
+                        btn = btn.parentElement;
+                    }
+                    if (!btn || btn === ticks || !btn.dataset || !btn.dataset.z) return;
+                    const v = parseFloat(btn.dataset.z) || 1;
+                    setZoomUIValue(v);
+                    applyHardwareZoomIfPossible(v);
+                    openPop();
+                });
+            }
+
+            // init
+            setZoomUIValue(liveState.userZoom || 1);
+            closePop();
         }
 
         function isIOSSafari() {
@@ -3270,6 +3404,7 @@
                 liveCoverCanvas = null;
                 liveCoverLastRatio = null;
                 ensureLiveOptionsUI();
+                wireMobileZoomUI();
 
                 liveState.stream = await navigator.mediaDevices.getUserMedia({
                     video: getLiveVideoConstraints(), audio: false
@@ -3295,9 +3430,7 @@
                                 zEl.max = String(Math.max(zEl.min, zmax));
                                 zEl.step = String(Math.max(0.01, zstep));
                                 const cur = (s && typeof s.zoom === 'number') ? s.zoom : liveState.userZoom;
-                                liveState.userZoom = cur || 1;
-                                zEl.value = String(liveState.userZoom);
-                                if (zVEl) zVEl.textContent = (liveState.userZoom).toFixed(2);
+                                setZoomUIValue(cur || 1);
                             }
                         } catch (_) { }
                         __liveTrackDebug = { settings: s, constraints: c, capabilities: cap };
@@ -3445,6 +3578,8 @@
         const mobFlip = document.getElementById('mob-flip');
         const mobDl = document.getElementById('mob-download');
         const mobRatio = document.getElementById('mob-ratio');
+        const mobZoom = document.getElementById('mob-zoom');
+        const mobZoomPop = document.getElementById('mob-zoom-pop');
 
         // Mobile FAB visibility by mode:
         // - Live: show shutter + flip + ratio + download
@@ -3456,6 +3591,8 @@
                 mobShutter.style.display = 'none';
                 mobFlip.style.display = 'none';
                 mobDl.style.display = 'none';
+                if (mobZoom) mobZoom.style.display = 'none';
+                if (mobZoomPop) mobZoomPop.style.display = 'none';
                 if (mobUndo) mobUndo.style.display = 'none';
                 if (mobRatio) mobRatio.style.display = 'none';
                 if (modeBtn) modeBtn.style.display = 'none';
@@ -3469,6 +3606,7 @@
                 // Keep Download available in Draw/Upload even when panel is open.
                 // In Live we download via the preview modal (from shutter/record stop), so keep it hidden.
                 mobDl.style.display = (state.mode === 'live') ? 'none' : 'block';
+                if (mobZoom) mobZoom.style.display = (state.mode === 'live') ? 'flex' : 'none';
                 // Keep Undo available in Draw even when panel is open.
                 if (mobUndo) mobUndo.style.display = (state.mode === 'draw') ? 'flex' : 'none';
                 if (mobRatio) mobRatio.style.display = 'none';
@@ -3482,6 +3620,8 @@
             mobDl.style.display = (state.mode === 'live') ? 'none' : 'block';
             // Undo only in Draw (Upload doesn't need undo)
             if (mobUndo) mobUndo.style.display = (state.mode === 'draw') ? 'flex' : 'none';
+            if (mobZoom) mobZoom.style.display = (state.mode === 'live') ? 'flex' : 'none';
+            if (mobZoomPop && state.mode !== 'live') mobZoomPop.style.display = 'none';
 
             if (state.mode === 'live') {
                 mobShutter.style.display = 'block';
@@ -3813,7 +3953,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v32';
+            const __BUILD = 'v33';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3847,7 +3987,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=32';
+            const __SW_URL = 'sw.js?v=33';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
