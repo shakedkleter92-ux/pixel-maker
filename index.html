@@ -1443,7 +1443,7 @@
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
         <span>Pixel Maker <span id="build-tag"
-                style="opacity:.65; font-size:11px; margin-left:6px;">v22</span></span>
+                style="opacity:.65; font-size:11px; margin-left:6px;">v23</span></span>
         <button id="panel-toggle-btn" aria-label="Toggle controls">☰</button>
     </div>
 
@@ -1841,28 +1841,25 @@
             }
 
             if (isLive) {
-                // Live preview on mobile: render into a portrait UI frame (9:16 by default)
-                // so the grid doesn't become tiny. The camera itself is still drawn "contain"
-                // inside the grid (no crop).
+                // Live preview: always render into the TARGET ratio frame (single source of truth),
+                // fitted inside #main. Camera pixels are still "contain" inside the grid (no crop).
                 var frameW = Math.max(1, W);
                 var frameH = Math.max(1, H);
                 var dx = 0, dy = 0;
-                if (isMobileLayout()) {
-                    var desiredAR = getAspectRatioValue(liveState.aspectRatio || '9:16'); // width/height
-                    if (desiredAR > 1) desiredAR = 1 / desiredAR;
-                    var screenAR = frameW / frameH;
-                    if (screenAR > desiredAR) {
-                        frameW = Math.max(1, Math.round(frameH * desiredAR));
-                        dx = Math.round((W - frameW) / 2);
-                    } else {
-                        frameH = Math.max(1, Math.round(frameW / desiredAR));
-                        dy = Math.round((H - frameH) / 2);
-                    }
+                var desiredAR = getLiveTargetRatioValue(); // width/height
+                if (desiredAR > 1) desiredAR = 1 / desiredAR;
+                var screenAR = frameW / frameH;
+                if (screenAR > desiredAR) {
+                    frameW = Math.max(1, Math.round(frameH * desiredAR));
+                    dx = Math.round((W - frameW) / 2);
+                } else {
+                    frameH = Math.max(1, Math.round(frameW / desiredAR));
+                    dy = Math.round((H - frameH) / 2);
                 }
 
                 var cw = frameW;
                 var ch = frameH;
-                var coverKey = 'screen:' + cw + 'x' + ch + ':m=' + (isMobileLayout() ? 'm' : 'd');
+                var coverKey = 'screen:' + cw + 'x' + ch + ':t=' + getLiveTargetRatioKey();
                 if (!liveCoverCanvas || liveCoverLastRatio !== coverKey) {
                     liveCoverCanvas = document.createElement('canvas');
                     liveCoverLastRatio = coverKey;
@@ -2989,6 +2986,20 @@
             aspectRatio: '9:16',
         };
 
+        // Single source of truth: target preview ratio by breakpoint.
+        // - mobile: 9:16 (portrait)
+        // - tablet: 3:4 (portrait-ish)
+        // - desktop: 9:16 (portrait, per request; keeps behavior consistent across devices)
+        function getLiveTargetRatioKey() {
+            const mode = getLayoutMode();
+            if (mode === 'tablet') return '3:4';
+            return '9:16';
+        }
+
+        function getLiveTargetRatioValue() {
+            return getAspectRatioValue(getLiveTargetRatioKey());
+        }
+
         function getAspectRatioValue(ratioKey) {
             if (ratioKey === '1:1') return 1;
             if (ratioKey === '3:4') return 3 / 4;
@@ -3033,47 +3044,27 @@
 
         function getLiveVideoConstraints() {
             const mode = getLayoutMode();
-            // Use "ideal" constraints; browser may pick closest supported.
-            const ar = getMainAspectRatioFallback();
-            // Pick a reasonable ideal resolution and let aspectRatio match the visible area
-            // to prevent browser-level crop/zoom on mobile.
-            const long = mode === 'desktop' ? 1920 : (mode === 'tablet' ? 1280 : 1280);
-            const isPortrait = ar < 1;
-            const idealW = Math.max(320, Math.round(isPortrait ? long * ar : long));
-            const idealH = Math.max(320, Math.round(isPortrait ? long : long / ar));
-            if (mode === 'mobile') {
-                // Mobile: try to REQUEST portrait capture (camera apps behavior).
-                // iOS may ignore these, but when honored it fixes the "landscape buffer" issue.
-                let desiredAR = getAspectRatioValue(liveState.aspectRatio || '9:16'); // width/height
-                // Never request landscape AR on mobile
-                if (desiredAR > 1) desiredAR = 1 / desiredAR;
-                return {
-                    facingMode: liveState.facingMode,
-                    width: { ideal: 720 },
-                    height: { ideal: 1280 },
-                    aspectRatio: { ideal: desiredAR },
-                    // Provide additional common portrait targets as hints
-                    advanced: [
-                        { width: 720, height: 1280 },
-                        { width: 1080, height: 1920 },
-                        { width: 640, height: 1136 },
-                    ]
-                };
-            }
-            if (mode === 'tablet') {
-                return {
-                    facingMode: liveState.facingMode,
-                    width: { ideal: idealW },
-                    height: { ideal: idealH },
-                    aspectRatio: { ideal: ar }
-                };
-            }
-            // desktop
+            // Request a stream that matches our target ratio for this breakpoint.
+            // Browsers may ignore, but when honored it prevents "stuck 16:9" on mobile.
+            let desiredAR = getLiveTargetRatioValue(); // width/height, portrait < 1
+            if (desiredAR > 1) desiredAR = 1 / desiredAR;
+
+            // Choose a sensible ideal resolution per breakpoint (portrait).
+            // (width/height are only "ideal", so devices can pick the closest supported.)
+            const idealLong = (mode === 'desktop') ? 1920 : (mode === 'tablet' ? 1440 : 1280);
+            const idealH = idealLong;
+            const idealW = Math.max(360, Math.round(idealLong * desiredAR));
+
             return {
                 facingMode: liveState.facingMode,
                 width: { ideal: idealW },
                 height: { ideal: idealH },
-                aspectRatio: { ideal: ar }
+                aspectRatio: { ideal: desiredAR },
+                advanced: [
+                    { width: idealW, height: idealH },
+                    { width: 720, height: 1280 },
+                    { width: 1080, height: 1920 },
+                ]
             };
         }
 
@@ -3083,14 +3074,10 @@
             const vw = liveVideo.videoWidth, vh = liveVideo.videoHeight;
             const mode = getLayoutMode();
 
-            // Grid ratio: on mobile always use the desired aspect ratio (9:16 default)
-            // so the grid fills the portrait frame correctly.
-            let targetRatio = vw / vh;
-            if (mode === 'mobile') {
-                let desiredAR = getAspectRatioValue(liveState.aspectRatio || '9:16');
-                if (desiredAR > 1) desiredAR = 1 / desiredAR; // always portrait (< 1)
-                targetRatio = desiredAR;
-            }
+            // Grid ratio: always use the TARGET ratio (single source of truth),
+            // so the preview stays stable across devices and camera quirks.
+            let targetRatio = getLiveTargetRatioValue();
+            if (targetRatio > 1) targetRatio = 1 / targetRatio;
 
             // Grid dimensions (cols × rows ≈ N²)
             const sqrtR = Math.sqrt(targetRatio);
@@ -3099,11 +3086,29 @@
             liveOffC.width = cols; liveOffC.height = rows;
 
             // Draw video into the downsampled canvas.
-            // iOS Safari auto-applies EXIF/metadata rotation when drawing a video element,
-            // so we do NOT rotate manually — a manual rotation would double-flip the image.
-            // We only apply a horizontal mirror for the front camera (selfie preview).
-            const scale = Math.min(cols / vw, rows / vh);
-            const drawW = vw * scale, drawH = vh * scale;
+            // Always "contain": show the full camera frame (no crop) inside the target frame.
+            // If iOS delivers a landscape buffer while UI is portrait, rotate for sampling.
+            const wantPortraitUI = (targetRatio < 1) && (window.innerHeight >= window.innerWidth);
+            const needsRotate = wantPortraitUI && (vw > vh);
+            let srcEl = liveVideo;
+            let sw = vw, sh = vh;
+            if (needsRotate) {
+                // Direction heuristics: front camera tends to need CW, back camera CCW.
+                const dir = (liveState.facingMode === 'user') ? 1 : -1;
+                sw = vh; sh = vw;
+                liveRotC.width = sw;
+                liveRotC.height = sh;
+                liveRotX.save();
+                liveRotX.clearRect(0, 0, sw, sh);
+                liveRotX.translate(sw / 2, sh / 2);
+                liveRotX.rotate(dir * (Math.PI / 2));
+                liveRotX.drawImage(liveVideo, -vw / 2, -vh / 2, vw, vh);
+                liveRotX.restore();
+                srcEl = liveRotC;
+            }
+
+            const scale = Math.min(cols / sw, rows / sh);
+            const drawW = sw * scale, drawH = sh * scale;
             const dstX = (cols - drawW) / 2, dstY = (rows - drawH) / 2;
             liveOffX.fillStyle = liveState.bgCol;
             liveOffX.fillRect(0, 0, cols, rows);
@@ -3111,10 +3116,10 @@
                 liveOffX.save();
                 liveOffX.translate(dstX + drawW, dstY);
                 liveOffX.scale(-1, 1);
-                liveOffX.drawImage(liveVideo, 0, 0, vw, vh, 0, 0, drawW, drawH);
+                liveOffX.drawImage(srcEl, 0, 0, sw, sh, 0, 0, drawW, drawH);
                 liveOffX.restore();
             } else {
-                liveOffX.drawImage(liveVideo, 0, 0, vw, vh, dstX, dstY, drawW, drawH);
+                liveOffX.drawImage(srcEl, 0, 0, sw, sh, dstX, dstY, drawW, drawH);
             }
             return { px: liveOffX.getImageData(0, 0, cols, rows).data, cols, rows };
         }
@@ -3166,12 +3171,11 @@
 
         async function startCamera() {
             try {
-                // Guard: never keep a landscape UI ratio on mobile
-                if (isMobileLayout() && liveState.aspectRatio === '16:9') {
-                    liveState.aspectRatio = '9:16';
-                    liveCoverCanvas = null;
-                    liveCoverLastRatio = null;
-                }
+                // Sync Live ratio to breakpoint (single source of truth)
+                liveState.aspectRatio = getLiveTargetRatioKey();
+                liveCoverCanvas = null;
+                liveCoverLastRatio = null;
+
                 liveState.stream = await navigator.mediaDevices.getUserMedia({
                     video: getLiveVideoConstraints(), audio: false
                 });
@@ -3685,7 +3689,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v22';
+            const __BUILD = 'v23';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3719,7 +3723,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=22';
+            const __SW_URL = 'sw.js?v=23';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
