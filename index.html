@@ -1473,7 +1473,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: var(--bg);
+            background: #030303;
             z-index: 1000;
             flex-direction: column;
             align-items: center;
@@ -1481,10 +1481,76 @@
             padding: 24px;
             text-align: center;
             font-family: 'IBM Plex Mono', monospace;
+            overflow: hidden;
         }
 
         #install-prompt.show {
             display: flex;
+        }
+
+        #install-prompt .splash-bg {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #install-prompt #splash-squares {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+
+        #install-prompt .sq {
+            position: absolute;
+            background: #000;
+            will-change: transform, opacity, filter;
+            border: 1px solid rgba(255, 255, 255, .04);
+            left: 0;
+            top: 0;
+            transform: translate3d(var(--x, 0px), var(--y, 0px), 0) rotate(var(--r, 0deg)) scale(1);
+            opacity: var(--o, .22);
+            animation: sqEnter 900ms cubic-bezier(.2, .9, .2, 1) both;
+            animation-delay: var(--d, 0ms);
+            filter: blur(.1px);
+        }
+
+        @keyframes sqEnter {
+            0% {
+                opacity: 0;
+                transform: translate3d(var(--x, 0px), calc(var(--y, 0px) + 90px), 0) rotate(var(--r, 0deg)) scale(.65);
+            }
+            65% {
+                opacity: var(--o, .22);
+                transform: translate3d(var(--x, 0px), calc(var(--y, 0px) - 6px), 0) rotate(var(--r, 0deg)) scale(1.03);
+            }
+            100% {
+                opacity: var(--o, .22);
+                transform: translate3d(var(--x, 0px), var(--y, 0px), 0) rotate(var(--r, 0deg)) scale(1);
+            }
+        }
+
+        #install-prompt .splash-gradient {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, .45), rgba(0, 0, 0, 0) 45%, rgba(0, 0, 0, .65));
+        }
+
+        #install-prompt .splash-content {
+            position: relative;
+            z-index: 1;
+            max-width: 560px;
+            width: min(560px, calc(100vw - 48px));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 26px 22px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .04);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
         #install-prompt h2 {
@@ -1531,12 +1597,18 @@
 <body>
     <!-- Add to home screen prompt (shown on mobile when opening from link) -->
     <div id="install-prompt" aria-hidden="true">
-        <h2>Pixelart Maker</h2>
-        <p>Add a shortcut to your home screen to open the app from your icon.</p>
-        <button type="button" class="install-btn" id="install-prompt-btn">Add to Home Screen</button>
-        <p id="install-manual-hint"
-            style="display:none; font-size:11px; margin-top:10px; color:var(--text); font-weight:600;"></p>
-        <button type="button" class="skip-btn" id="install-prompt-skip">Continue to app</button>
+        <div class="splash-bg" aria-hidden="true">
+            <div id="splash-squares" aria-hidden="true"></div>
+            <div class="splash-gradient"></div>
+        </div>
+        <div class="splash-content">
+            <h2>Pixelart Maker</h2>
+            <p>Add a shortcut to your home screen to open the app from your icon.</p>
+            <button type="button" class="install-btn" id="install-prompt-btn">Add to Home Screen</button>
+            <p id="install-manual-hint"
+                style="display:none; font-size:11px; margin-top:10px; color:var(--text); font-weight:600;"></p>
+            <button type="button" class="skip-btn" id="install-prompt-skip">Continue to app</button>
+        </div>
     </div>
     <!-- Mobile top header: mode switch (DRAW / IMAGE / LIVE) -->
     <div id="mob-mode-header" aria-label="Modes">
@@ -4021,9 +4093,9 @@
             // Expose for debugging from Safari (DevTools): `forceAppUpdate()`
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
-            // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=45';
-            navigator.serviceWorker.register(__SW_URL).then((reg) => {
+            // Register SW with a robust fallback (some Safari/PWA states fail on query-string URLs)
+            const __SW_URL = 'sw.js?v=46';
+            function onRegistered(reg) {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
                 }
@@ -4038,7 +4110,11 @@
 
                 // If there's already an update waiting, activate it
                 trySkipWaiting();
-            }).catch(() => { });
+            }
+
+            navigator.serviceWorker.register(__SW_URL)
+                .then(onRegistered)
+                .catch(() => navigator.serviceWorker.register('sw.js').then(onRegistered).catch(() => { }));
 
             // When the new SW takes control, reload once so the UI uses the new cached files
             let reloading = false;
@@ -4055,10 +4131,58 @@
             const installBtn = document.getElementById('install-prompt-btn');
             const skipBtn = document.getElementById('install-prompt-skip');
             const manualHint = document.getElementById('install-manual-hint');
+            const splashSquaresEl = document.getElementById('splash-squares');
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                 window.navigator.standalone === true;
             const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 700;
             let deferredPrompt = null;
+
+            let splashSquaresStarted = false;
+            let splashSquaresItems = [];
+
+            function rand(a, b) { return a + Math.random() * (b - a); }
+            function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+
+            function stopSplashSquares() {
+                splashSquaresStarted = false;
+                splashSquaresItems.length = 0;
+                if (splashSquaresEl) splashSquaresEl.innerHTML = '';
+            }
+
+            function startSplashSquares() {
+                if (!installEl || !installEl.classList.contains('show')) return;
+                if (!splashSquaresEl) return;
+                if (splashSquaresStarted) stopSplashSquares();
+                splashSquaresStarted = true;
+
+                // Build a field of black squares that "enter" (staggered), then stay static
+                const count = Math.max(22, Math.min(90, Math.round((window.innerWidth * window.innerHeight) / 22000)));
+                splashSquaresEl.innerHTML = '';
+                splashSquaresItems = new Array(count);
+
+                const w = Math.max(1, window.innerWidth);
+                const h = Math.max(1, window.innerHeight);
+
+                for (let i = 0; i < count; i++) {
+                    const el = document.createElement('div');
+                    el.className = 'sq';
+                    const size = rand(10, 34);
+                    const x = rand(-0.1, 1.1) * w;
+                    const y = rand(-0.2, 1.2) * h;
+                    const rot = rand(-25, 25);
+                    const opacity = clamp01(rand(0.08, 0.28));
+                    const delay = Math.round(rand(0, 900)); // ms
+                    el.style.width = size + 'px';
+                    el.style.height = size + 'px';
+                    el.style.setProperty('--x', x.toFixed(1) + 'px');
+                    el.style.setProperty('--y', y.toFixed(1) + 'px');
+                    el.style.setProperty('--r', rot.toFixed(1) + 'deg');
+                    el.style.setProperty('--o', opacity.toFixed(3));
+                    el.style.setProperty('--d', delay + 'ms');
+                    splashSquaresEl.appendChild(el);
+                    splashSquaresItems[i] = { el };
+                }
+            }
 
             window.addEventListener('beforeinstallprompt', function (e) {
                 e.preventDefault();
@@ -4087,7 +4211,10 @@
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
                     deferredPrompt.userChoice.then(function (r) {
-                        if (r.outcome === 'accepted') installEl.classList.remove('show');
+                        if (r.outcome === 'accepted') {
+                            installEl.classList.remove('show');
+                            stopSplashSquares();
+                        }
                         deferredPrompt = null;
                     });
                 } else {
@@ -4096,6 +4223,7 @@
             });
             if (skipBtn) skipBtn.addEventListener('click', function () {
                 installEl.classList.remove('show');
+                stopSplashSquares();
                 try { sessionStorage.setItem('pixelmaker-skip-install', '1'); } catch (_) { }
             });
 
@@ -4106,6 +4234,8 @@
                 installEl.setAttribute('aria-hidden', 'false');
                 installEl.classList.add('show');
                 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) showManualHint();
+                startSplashSquares();
+                window.addEventListener('resize', () => { if (installEl.classList.contains('show')) startSplashSquares(); }, { passive: true });
             }
         })();
     </script>
