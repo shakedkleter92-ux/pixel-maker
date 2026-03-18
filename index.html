@@ -103,9 +103,22 @@
             letter-spacing: .05em
         }
 
-        /* Hide panel header completely (Pixel Maker title/subtitle) */
-        #panel-header {
-            display: none
+        /* Desktop: show panel header (app title) */
+        @media (min-width: 1025px) {
+            #panel-header {
+                display: block;
+            }
+        }
+        /* Mobile/tablet: keep header hidden */
+        @media (max-width: 1024px) {
+            #panel-header {
+                display: none;
+            }
+        }
+
+        /* Desktop minimal view (Live/Upload): hide panel entirely */
+        body.desktop-minimal #panel {
+            display: none !important;
         }
 
         .section {
@@ -1574,6 +1587,9 @@
 
     <div id="app">
         <aside id="panel">
+            <div id="panel-header">
+                <h1>Pixelart Maker</h1>
+            </div>
 
             <!-- Mode switch (desktop): keep first in panel -->
             <div class="section desktop-mode-switch">
@@ -3503,6 +3519,8 @@
                 if (gapV) gapV.textContent = '0';
             }
             state.mode = mode;
+            // Desktop: hide the side panel in Live + Upload (clean view)
+            document.body.classList.toggle('desktop-minimal', isDesktopLayout() && (mode === 'live' || mode === 'image'));
             document.querySelectorAll('.fm-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.mob-fm-btn').forEach(b => b.classList.remove('active'));
             var drawOpts = document.getElementById('draw-options');
@@ -3956,7 +3974,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v40';
+            const __BUILD = 'v41';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3990,7 +4008,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=41';
+            const __SW_URL = 'sw.js?v=42';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
