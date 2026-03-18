@@ -1,6 +1,6 @@
 {
-  "name": "Pixel Maker",
-  "short_name": "Pixel Maker",
+  "name": "Pixelart Maker",
+  "short_name": "Pixelart Maker",
   "description": "make it pixel",
   "start_url": "./",
   "scope": "./",
