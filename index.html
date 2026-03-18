@@ -1339,7 +1339,7 @@
             letter-spacing: .03em;
             text-transform: uppercase;
             font-family: 'IBM Plex Mono', monospace;
-            color: var(--text) !important;
+            color: var(--text);
             -webkit-text-fill-color: var(--text);
             z-index: 140;
             display: flex;
@@ -1354,8 +1354,8 @@
             position: fixed;
             right: 20px;
             bottom: 136px;
-            width: 96px;
-            padding: 8px;
+            width: 44px;
+            padding: 0;
             border: 1px solid var(--border);
             background: rgba(255, 255, 255, 0.92);
             backdrop-filter: blur(10px);
@@ -1366,11 +1366,11 @@
         #mob-zoom-ticks {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 0;
         }
 
         #mob-zoom-ticks button {
-            width: 100%;
+            width: 44px;
             height: 44px;
             padding: 0;
             border: 1px solid var(--border);
@@ -1381,10 +1381,16 @@
             letter-spacing: .08em;
             text-transform: uppercase;
             cursor: pointer;
-            color: var(--text) !important;
+            color: var(--text);
             -webkit-text-fill-color: var(--text);
             -webkit-appearance: none;
             appearance: none;
+        }
+
+        #mob-zoom-ticks button.active {
+            background: var(--text);
+            color: var(--bg);
+            -webkit-text-fill-color: var(--bg);
         }
 
         /* Desktop: show floating undo outside panel (Draw) */
@@ -1516,7 +1522,7 @@
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
         <span>Pixel Maker <span id="build-tag"
-                style="opacity:.65; font-size:11px; margin-left:6px;">v36</span></span>
+                style="opacity:.65; font-size:11px; margin-left:6px;">v37</span></span>
         <button id="panel-toggle-btn" aria-label="Toggle controls">☰</button>
     </div>
 
@@ -3094,6 +3100,7 @@
             facingMode: 'user',
             aspectRatio: '9:16',
             userZoom: 1, // user-controlled zoom (hardware if available, else software)
+            wideStrength: 0, // 0..0.8 radial "wide" effect before pixelization
         };
 
         // Single source of truth: target preview ratio by breakpoint.
@@ -3135,12 +3142,27 @@
 
         function ensureLiveOptionsUI() {
             // Zoom UI is handled by the floating button on mobile.
-            // Keep live-options minimal/empty (per request).
+            // Wide effect control lives here (optional).
             const box = document.getElementById('live-options');
             if (!box) return;
             if (box.__wired) return;
             box.__wired = true;
-            box.innerHTML = '';
+            box.innerHTML = `
+              <div class="slider-row">
+                <span class="sl-label">Wide</span>
+                <input type="range" id="live-wide" min="0" max="0.8" step="0.01" value="0" />
+                <span class="sl-val" id="live-wide-v">0.00</span>
+              </div>
+            `;
+            const w = document.getElementById('live-wide');
+            const wv = document.getElementById('live-wide-v');
+            if (w) {
+                w.addEventListener('input', () => {
+                    const val = Math.max(0, Math.min(0.8, parseFloat(w.value || '0') || 0));
+                    liveState.wideStrength = val;
+                    if (wv) wv.textContent = val.toFixed(2);
+                });
+            }
         }
 
         function computeLiveZoomRange() {
@@ -3220,12 +3242,25 @@
                     const v = parseFloat(btn.dataset.z) || 1;
                     setZoomUIValue(v);
                     applyHardwareZoomIfPossible(v);
+                    // Active state (white text on black bg)
+                    try {
+                        ticks.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+                    } catch (_) { }
                     openPop();
                 });
             }
 
             // init
             setZoomUIValue(liveState.userZoom || 1);
+            try {
+                if (ticks) {
+                    const cur = liveState.userZoom || 1;
+                    ticks.querySelectorAll('button').forEach(b => {
+                        const v = parseFloat(b.dataset && b.dataset.z ? b.dataset.z : '') || NaN;
+                        b.classList.toggle('active', Math.abs(v - cur) < 1e-6);
+                    });
+                }
+            } catch (_) { }
             closePop();
         }
 
@@ -3354,6 +3389,41 @@
                 liveOffX.restore();
             } else {
                 liveOffX.drawImage(srcEl, 0, 0, sw, sh, dstX, dstY, drawW, drawH);
+            }
+
+            // Optional "wide" effect (radial distortion) before pixelization.
+            // Implemented at grid resolution (cols×rows) for performance.
+            const strength = liveState.wideStrength || 0;
+            if (strength > 0.001) {
+                const img = liveOffX.getImageData(0, 0, cols, rows);
+                const src = img.data;
+                const out = new Uint8ClampedArray(src.length);
+                const cx = (cols - 1) / 2;
+                const cy = (rows - 1) / 2;
+                const invCx = cx ? (1 / cx) : 0;
+                const invCy = cy ? (1 / cy) : 0;
+                for (let y = 0; y < rows; y++) {
+                    for (let x = 0; x < cols; x++) {
+                        // Normalize to [-1..1]
+                        const nx = (x - cx) * invCx;
+                        const ny = (y - cy) * invCy;
+                        const dist2 = nx * nx + ny * ny;
+                        // Inverse mapping to avoid holes
+                        const k = 1 + strength * dist2;
+                        const sx = cx + (x - cx) / k;
+                        const sy = cy + (y - cy) / k;
+                        const ix = Math.max(0, Math.min(cols - 1, Math.round(sx)));
+                        const iy = Math.max(0, Math.min(rows - 1, Math.round(sy)));
+                        const si = (iy * cols + ix) * 4;
+                        const di = (y * cols + x) * 4;
+                        out[di] = src[si];
+                        out[di + 1] = src[si + 1];
+                        out[di + 2] = src[si + 2];
+                        out[di + 3] = src[si + 3];
+                    }
+                }
+                img.data.set(out);
+                liveOffX.putImageData(img, 0, 0);
             }
             return { px: liveOffX.getImageData(0, 0, cols, rows).data, cols, rows };
         }
@@ -3951,7 +4021,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v36';
+            const __BUILD = 'v37';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3985,7 +4055,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=36';
+            const __SW_URL = 'sw.js?v=37';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
