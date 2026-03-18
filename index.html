@@ -1443,7 +1443,7 @@
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
         <span>Pixel Maker <span id="build-tag"
-                style="opacity:.65; font-size:11px; margin-left:6px;">v25</span></span>
+                style="opacity:.65; font-size:11px; margin-left:6px;">v26</span></span>
         <button id="panel-toggle-btn" aria-label="Toggle controls">☰</button>
     </div>
 
@@ -1729,9 +1729,10 @@
         // - tablet: fill screen -> cover
         // - desktop: reduce perceived zoom -> contain
         function getLiveScaleMode() {
-            // Mobile: avoid "crazy zoom" (less crop) -> contain
-            if (isMobileLayout()) return 'contain';
-            return isDesktopLayout() ? 'contain' : 'cover';
+            // Camera-app behavior: mobile/tablet fill the frame (cover),
+            // desktop keeps full frame visible (contain).
+            if (isDesktopLayout()) return 'contain';
+            return 'cover';
         }
 
 
@@ -3134,7 +3135,8 @@
                 srcEl = liveRotC;
             }
 
-            const scale = Math.min(cols / sw, rows / sh);
+            const scaleMode = getLiveScaleMode();
+            const scale = (scaleMode === 'cover') ? Math.max(cols / sw, rows / sh) : Math.min(cols / sw, rows / sh);
             const drawW = sw * scale, drawH = sh * scale;
             const dstX = (cols - drawW) / 2, dstY = (rows - drawH) / 2;
             __liveDebug = { vw, vh, sw, sh, cols, rows, drawW: Math.round(drawW), drawH: Math.round(drawH), dstX: Math.round(dstX), dstY: Math.round(dstY), needsRotate: !!needsRotate, target: targetRatio };
@@ -3717,7 +3719,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v25';
+            const __BUILD = 'v26';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3751,7 +3753,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=25';
+            const __SW_URL = 'sw.js?v=26';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
