@@ -1443,7 +1443,7 @@
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
         <span>Pixel Maker <span id="build-tag"
-                style="opacity:.65; font-size:11px; margin-left:6px;">(build?)</span></span>
+                style="opacity:.65; font-size:11px; margin-left:6px;">v22</span></span>
         <button id="panel-toggle-btn" aria-label="Toggle controls">☰</button>
     </div>
 
@@ -3685,7 +3685,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v21';
+            const __BUILD = 'v22';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3719,7 +3719,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=21';
+            const __SW_URL = 'sw.js?v=22';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
