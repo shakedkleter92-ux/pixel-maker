@@ -1443,7 +1443,7 @@
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
         <span>Pixel Maker <span id="build-tag"
-                style="opacity:.65; font-size:11px; margin-left:6px;">v31</span></span>
+                style="opacity:.65; font-size:11px; margin-left:6px;">v32</span></span>
         <button id="panel-toggle-btn" aria-label="Toggle controls">☰</button>
     </div>
 
@@ -3061,7 +3061,7 @@
             box.innerHTML = `
               <div class="slider-row">
                 <span class="sl-label">Zoom</span>
-                <input type="range" id="live-zoom" min="0.5" max="2" step="0.01" value="1" />
+                <input type="range" id="live-zoom" min="1" max="3" step="0.01" value="1" />
                 <span class="sl-val" id="live-zoom-v">1.00</span>
               </div>
             `;
@@ -3069,7 +3069,8 @@
             const zv = document.getElementById('live-zoom-v');
             if (z) {
                 z.addEventListener('input', () => {
-                    const val = Math.max(0.1, Math.min(3, parseFloat(z.value || '1') || 1));
+                    // Camera-app behavior: zoom is >= 1 (no zoom-out that reveals borders).
+                    const val = Math.max(1, Math.min(8, parseFloat(z.value || '1') || 1));
                     liveState.userZoom = val;
                     if (zv) zv.textContent = val.toFixed(2);
                     // Try hardware zoom if supported and within bounds
@@ -3191,15 +3192,12 @@
             const scaleMode = getLiveScaleMode();
             const containScale = Math.min(cols / sw, rows / sh);
             const coverScale = Math.max(cols / sw, rows / sh);
-            // Zoom behavior:
-            // - If cover: 1.0 = cover fill, <1 interpolates toward contain (less crop, may show borders),
-            //   >1 adds extra zoom-in on top of cover.
-            // - If contain: we still honor zoom (>1 zooms in, <1 zooms out with borders).
-            const z = Math.max(0.5, Math.min(2.5, liveState.userZoom || 1));
+            // Zoom behavior (camera app): keep frame filled.
+            // Zoom is >= 1: 1.0 = normal cover fill, >1 = zoom in (more crop).
+            const z = Math.max(1, Math.min(8, liveState.userZoom || 1));
             let scale;
             if (scaleMode === 'cover') {
-                if (z >= 1) scale = coverScale * z;
-                else scale = containScale + (coverScale - containScale) * z; // z in (0.5..1)
+                scale = coverScale * z;
             } else {
                 scale = containScale * z;
             }
@@ -3815,7 +3813,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v31';
+            const __BUILD = 'v32';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3849,7 +3847,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=31';
+            const __SW_URL = 'sw.js?v=32';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
