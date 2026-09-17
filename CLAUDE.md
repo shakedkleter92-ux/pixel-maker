@@ -16,7 +16,12 @@ Camera (Live mode) requires `localhost` or HTTPS. On the deployed site the SW ca
 aggressively — open `?__sw_reset=1` once to force-unregister it and clear all caches (or run
 `forceAppUpdate()` from Safari's console). The `__BUILD`/`__SW_URL` version strings near INIT
 and `sw.js`'s `CACHE` constant should all be bumped together on every deploy-worthy change —
-Safari in particular won't reliably notice `sw.js` changed otherwise.
+Safari in particular won't reliably notice `sw.js` changed otherwise. `reg.update()` in that
+same block must chain a real `.catch()`, not just sit inside a `try/catch` — it returns a
+Promise, so a `try/catch` around the call doesn't catch its rejection; a bare `reg.update()`
+once surfaced a transient network hiccup as a scary blocking "App error" alert via the global
+`unhandledrejection` handler (INIT, top of the file) for something that's normally harmless
+and self-healing.
 
 ## Layout of the repo
 
@@ -96,14 +101,16 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   `.5×` just falls back to the closest digital zoom the device actually has — never a crash or
   dead end.
   **`getLiveScaleMode()`** (how the camera frame is cropped into the target 9:16 grid, inside
-  `sampleLiveFrame()` — a different "cover" than the screen-fit one above) returns `'contain'`
-  (full native FOV, no crop) for desktop **and now also for the front/selfie camera on
-  mobile**, `'cover'` (fill + crop) only for the mobile back camera. A selfie lens' native FOV
-  is much wider than the tall portrait target, so cropping it to cover made 1x look
-  unnaturally zoomed in on a face with no way back out (zoom only ever narrows the frame
-  further); it shipped as unconditional `'cover'` on mobile once and was reported as too
-  tight on the front camera specifically — don't revert it to depend only on
-  `isDesktopLayout()`.
+  `sampleLiveFrame()` — a different "cover" than the screen-fit one above) is `'cover'` (fill +
+  crop) on mobile for both cameras, `'contain'` (full FOV, letterboxed) only on desktop.
+  **Tried making the front/selfie camera `'contain'` too**, to fix 1x looking too tight on a
+  face — reverted: `'contain'` leaves visible letterboxing bars whenever the camera's native
+  aspect doesn't match 9:16, which read as "the canvas shrank / has white margins" instead of
+  filling the screen — a worse regression than the original complaint. Filling the screen
+  edge-to-edge from a portrait target necessarily crops *some* of a wider, landscape-native
+  selfie lens; there's no scale-mode toggle that gives full-bleed fill and zero crop at once.
+  If "too close" on the front camera needs solving, it's a target-aspect-ratio question, not a
+  scale-mode one — don't retry the `facingMode === 'user'` branch without addressing that.
   **Capture mode** is one 3-way row (`#mob-capture-mode`: Video / Photo / Upload, each a
   `.mob-mode-label`) that doubles as the app's *only* mode switcher now — tapping "Upload" calls
   `switchToMode('image')`, tapping Video/Photo calls `switchToMode('live')` (if needed) then
@@ -248,7 +255,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v63`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v64`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.

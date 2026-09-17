@@ -1891,15 +1891,21 @@
         function isDesktopLayout() { return getLayoutMode() === 'desktop'; }
 
         // Live camera "preview fill" mode by breakpoint.
-        // - mobile back camera: fill screen (like camera apps) -> cover
+        // - mobile: fill screen (like camera apps) -> cover
         // - tablet: fill screen -> cover
-        // - desktop, and the front/selfie camera on any breakpoint: keep the full frame
-        //   visible -> contain. A selfie lens' native FOV is much wider than our tall 9:16
-        //   target, so cropping it to "cover" made 1x look unnaturally zoomed in on a face,
-        //   with no way to back out since zoom only ever narrows the frame further from there.
+        // - desktop: reduce perceived zoom -> contain
+        //
+        // Tried making the front/selfie camera "contain" too (to fix 1x looking too tight
+        // on a face) — reverted: "contain" leaves visible letterboxing bars around the
+        // camera image whenever its native aspect doesn't match the 9:16 target, which read
+        // as "the canvas shrank / has white margins instead of filling the screen" — worse
+        // than the original complaint. Filling the screen edge-to-edge from a portrait
+        // target necessarily requires *some* crop of a wider, landscape-native selfie lens;
+        // there's no way to have both full-bleed fill and zero crop at the same time. If the
+        // "too close" feeling needs solving, it likely has to be through a less extreme
+        // target aspect ratio for the front camera specifically, not this scale mode.
         function getLiveScaleMode() {
             if (isDesktopLayout()) return 'contain';
-            if (liveState.facingMode === 'user') return 'contain';
             return 'cover';
         }
 
@@ -3955,7 +3961,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v63';
+            const __BUILD = 'v64';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3989,12 +3995,15 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=63';
+            const __SW_URL = 'sw.js?v=64';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
                 }
-                try { reg.update(); } catch (_) { }
+                // reg.update() returns a Promise — try/catch alone doesn't catch its
+                // rejections (a transient network hiccup here was surfacing as a scary
+                // "App error" alert via the global unhandledrejection handler above).
+                try { reg.update().catch(() => { }); } catch (_) { }
                 reg.addEventListener('updatefound', () => {
                     const nw = reg.installing;
                     if (!nw) return;
