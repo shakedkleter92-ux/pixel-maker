@@ -157,7 +157,16 @@ a folder's contents on its own. The mechanism:
 
 ## Git
 
-Three remotes point at three GitHub repos: `origin` → `pixelmakegrid` (the live one),
-plus `pixelart` and `pixelmaker`. Deployed at
-`https://shakedkleter92-ux.github.io/pixelmakegrid/` and on Netlify.
+Three remotes were originally set up to point at three separate GitHub repos, but as of
+2026-09-17 that's down to two working ones:
+
+- `origin` (`pixelmakegrid.git`) and `pixelmaker` (`pixel-maker.git`) are now **the same
+  underlying GitHub repo** — GitHub renamed/moved `pixelmakegrid` to `pixel-maker` and
+  transparently redirects the old URL, so pushing to `origin` updates `pixelmaker` too (and
+  vice versa) with no extra push needed. `git push` warns "This repository moved" — that's
+  expected, not an error.
+- `pixelart` (`pixel-art-maker.git`) **returns "Repository not found"** — it's gone from
+  GitHub. Don't try to push there until/unless the user re-creates it and says so.
+
+Deployed at `https://shakedkleter92-ux.github.io/pixelmakegrid/` and on Netlify.
 Work on `main` unless told otherwise.
