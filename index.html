@@ -52,8 +52,8 @@
 
         :root {
             --bg: #fff;
-            --panel: #f0f0f0;
-            --surface: #e4e4e4;
+            --panel: #f3f4f6;
+            --surface: #e5e7eb;
             --border: #000;
             --text: #000;
             --muted: #666;
@@ -260,7 +260,7 @@
            of stretching their button. */
         .pal-tgt {
             padding: 6px 2px;
-            border: 1px solid var(--border);
+            border: none;
             background: var(--bg);
             font-size: 8px;
             font-weight: 700;
@@ -306,7 +306,7 @@
         .fm-btn {
             flex: 1;
             padding: 8px 6px;
-            border: 1px solid var(--border);
+            border: none;
             border-radius: 0;
             background: var(--bg);
             font-size: 9px;
@@ -342,10 +342,15 @@
 
         #drop-zone {
             width: 100%;
-            max-width: 320px;
-            border: 2px dashed var(--border);
+            max-width: 220px;
+            aspect-ratio: 1 / 1;
+            border: 1px solid rgba(0, 0, 0, .25);
             border-radius: 0;
-            padding: 40px 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
             cursor: pointer;
             position: relative;
@@ -383,7 +388,7 @@
         .btn {
             width: 100%;
             padding: 10px;
-            border: 1px solid var(--border);
+            border: none;
             border-radius: 0;
             font-size: 9px;
             font-weight: 700;
@@ -399,15 +404,16 @@
         button,
         .btn,
         .fm-btn,
-        .mob-fm-btn,
         .pal-tgt,
         #panel-toggle-bar,
         #mob-shutter,
+        #mob-upload-more,
         #mob-flip,
-        #mob-capture-mode,
+        .mob-mode-label,
+        .mob-zoom-preset,
         #mob-download,
         #mob-ratio,
-        #mob-zoom {
+        #mob-gallery {
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
         }
@@ -427,15 +433,16 @@
 
         .btn:active,
         .fm-btn:active,
-        .mob-fm-btn:active,
         .pal-tgt:active,
         #panel-toggle-bar:active,
         #mob-shutter:active,
+        #mob-upload-more:active,
         #mob-flip:active,
-        #mob-capture-mode:active,
+        .mob-mode-label:active,
+        .mob-zoom-preset:active,
         #mob-download:active,
         #mob-ratio:active,
-        #mob-zoom:active {
+        #mob-gallery:active {
             transform: scale(.97);
         }
 
@@ -443,15 +450,15 @@
 
             .btn:hover,
             .fm-btn:hover,
-            .mob-fm-btn:hover,
             .pal-tgt:hover,
             #panel-toggle-bar:hover,
             #mob-shutter:hover,
+            #mob-upload-more:hover,
             #mob-flip:hover,
-            #mob-capture-mode:hover,
+            .mob-mode-label:hover,
             #mob-download:hover,
             #mob-ratio:hover,
-            #mob-zoom:hover {
+            #mob-gallery:hover {
                 transform: scale(1.02);
                 background: var(--surface);
             }
@@ -479,11 +486,6 @@
             body {
                 overflow: hidden;
                 height: 100%
-            }
-
-            /* show top mode header on tablet too */
-            #mob-mode-header {
-                display: flex;
             }
 
             #app {
@@ -575,7 +577,7 @@
         }
 
         .btn-outline {
-            background: var(--bg);
+            background: var(--panel);
             color: var(--muted)
         }
 
@@ -624,91 +626,46 @@
             z-index: 1;
         }
 
-        /* ───── Mobile top header (mode: Upload / Live) ───── */
-        #mob-mode-header {
+        /* Recording timer — top-center, only while actually recording video */
+        #mob-rec-timer {
+            display: none;
+            position: fixed;
+            top: 46px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 130;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, .55);
+            border-radius: 0;
+            padding: 5px 10px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .05em;
+            color: #fff;
+            -webkit-text-fill-color: #fff;
+        }
+
+        #mob-rec-timer::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff2b2b;
+        }
+
+        /* ───── Mobile top bar & panel toggle ───── */
+        /* This used to sit at the bottom; it's the top bar now, and the panel opens
+           downward beneath it instead of upward from the bottom. */
+        #panel-toggle-bar {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 48px;
-            z-index: 120;
-            background: var(--fab-bg);
-            border: 1px solid var(--border);
-            flex-direction: row;
-            align-items: stretch;
-        }
-
-        #mob-mode-header .mob-fm-btn {
-            flex: 1;
-            border: none;
-            border-right: 1px solid var(--border);
-            border-radius: 0;
-            background: var(--fab-bg);
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: .14em;
-            text-transform: uppercase;
-            cursor: pointer;
-            font-family: 'IBM Plex Mono', monospace;
-            color: var(--muted);
-            transition: background .12s, color .12s, transform .12s;
-        }
-
-        #mob-mode-header .mob-fm-btn>span {
-            display: inline-block;
-            transition: transform .12s ease;
-            transform: translateZ(0);
-        }
-
-        /* Hover: grey background + scale text only */
-        @media (hover:hover) {
-            #mob-mode-header .mob-fm-btn:hover {
-                background: var(--surface);
-                transform: none;
-                /* override global hover scale */
-            }
-
-            #mob-mode-header .mob-fm-btn:hover>span {
-                transform: scale(1.08);
-            }
-        }
-
-        /* Press: scale text only */
-        #mob-mode-header .mob-fm-btn:active {
-            transform: none;
-            /* override global active scale */
-        }
-
-        #mob-mode-header .mob-fm-btn:active>span {
-            transform: scale(.97);
-        }
-
-        #mob-mode-header .mob-fm-btn:last-child {
-            border-right: none;
-        }
-
-        #mob-mode-header .mob-fm-btn.active {
-            background: var(--text);
-            color: var(--bg);
-            -webkit-text-fill-color: var(--bg);
-        }
-
-        #mob-mode-header .mob-fm-btn.active>span {
-            color: var(--bg);
-            -webkit-text-fill-color: var(--bg);
-        }
-
-        /* ───── Mobile bottom bar & panel toggle ───── */
-        #panel-toggle-bar {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 68px;
-            background: var(--fab-bg);
-            border-top: 1px solid var(--border);
+            height: 36px;
+            background: var(--panel);
             border-radius: 0;
             z-index: 110;
             align-items: center;
@@ -741,6 +698,232 @@
 
         #panel-toggle-btn {
             display: none
+        }
+
+        /* Gallery: full-screen, same light theme as the rest of the app (white background,
+           black = active/selected — no separate dark theme for this screen). */
+        #gallery-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #gallery-header {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        #gallery-close {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            -webkit-text-fill-color: var(--text);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+        }
+
+        #gallery-title {
+            flex: 1;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .15em;
+            color: var(--text);
+            -webkit-text-fill-color: var(--text);
+        }
+
+        #gallery-count {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            -webkit-text-fill-color: var(--muted);
+        }
+
+        #gallery-grid {
+            flex: 1;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            padding: 2px;
+        }
+
+        #gallery-empty {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            cursor: pointer;
+            background: var(--surface);
+        }
+
+        .gallery-item img,
+        .gallery-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gallery-item .gallery-video-badge {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 12px;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
+        }
+
+        /* Selection circle is its own tap target (stopPropagation) — tapping the rest of
+           the thumbnail opens the full-screen viewer instead. */
+        .gallery-item .gallery-check {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 20px;
+            height: 20px;
+            border-radius: 0;
+            border: 1.5px solid #fff;
+            background: rgba(0, 0, 0, .35);
+        }
+
+        .gallery-item.selected .gallery-check {
+            background: var(--text);
+            border-color: var(--text);
+        }
+
+        .gallery-item.selected::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 3px solid var(--text);
+            pointer-events: none;
+        }
+
+        #gallery-actions {
+            flex: 0 0 auto;
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        #gallery-actions .btn {
+            width: auto;
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        #gallery-actions .btn:disabled {
+            opacity: .35;
+            cursor: default;
+        }
+
+        /* Full-screen single-item viewer: tap a thumbnail to open, swipe left/right to
+           move between items, Delete/Download act on just the one being viewed. */
+        #gallery-viewer {
+            position: fixed;
+            inset: 0;
+            z-index: 310;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #gallery-viewer-header {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        #gallery-viewer-close {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            -webkit-text-fill-color: var(--text);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+        }
+
+        #gallery-viewer-count {
+            flex: 1;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            -webkit-text-fill-color: var(--muted);
+            text-align: right;
+        }
+
+        #gallery-viewer-stage {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            touch-action: pan-y;
+        }
+
+        #gallery-viewer-stage img,
+        #gallery-viewer-stage video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: var(--bg);
+        }
+
+        #gallery-viewer-actions {
+            flex: 0 0 auto;
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        #gallery-viewer-actions .btn {
+            width: auto;
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        /* Gallery FAB shows the latest capture as a thumbnail, like a phone camera's
+           roll shortcut, once there's at least one. */
+        #mob-gallery.has-thumb {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #mob-gallery.has-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         /* Export preview modal */
@@ -849,10 +1032,6 @@
                 height: 100%
             }
 
-            #mob-mode-header {
-                display: flex;
-            }
-
             #app {
                 flex-direction: column;
                 height: 100dvh;
@@ -862,15 +1041,15 @@
                 box-sizing: border-box;
             }
 
-            /* Canvas area fills the top */
+            /* Canvas area fills the whole screen below the top bar (no white margins;
+               nothing is reserved at the bottom anymore — every other control there is a
+               floating overlay, not part of layout flow) */
             #main {
-                /* Fill all space between top and bottom bar (no white margins) */
                 position: fixed;
-                /* Keep canvas flush under the fixed top header (no jump on panel open) */
-                top: 48px;
+                top: 36px;
                 left: 0;
                 right: 0;
-                bottom: 68px;
+                bottom: 0;
                 z-index: 0;
                 height: auto;
                 min-height: 0;
@@ -883,10 +1062,10 @@
                 height: 100%;
             }
 
-            /* Panel becomes a sliding drawer from the bottom */
+            /* Panel becomes a sliding drawer from the top, right below the toggle bar */
             #panel {
                 position: fixed;
-                bottom: 68px;
+                top: 36px;
                 left: 0;
                 right: 0;
                 width: 100%;
@@ -894,7 +1073,6 @@
                 max-height: 0;
                 overflow: hidden;
                 border-right: none;
-                border-top: 1px solid var(--border);
                 z-index: 90;
                 transition: max-height .35s cubic-bezier(.4, 0, .2, 1)
             }
@@ -928,10 +1106,10 @@
             #panel.panel-open::before {
                 content: '';
                 position: fixed;
-                top: 0;
+                top: 36px;
                 left: 0;
                 right: 0;
-                bottom: 68px;
+                bottom: 0;
                 /* subtle dim behind the frosted panel */
                 background: rgba(0, 0, 0, 0.06);
                 z-index: -1;
@@ -1040,10 +1218,6 @@
 
         /* Tablet / large phones: show mobile docks too (layout stays desktop) */
         @media (max-width: 1024px) {
-            #mob-mode-header {
-                display: flex;
-            }
-
             #panel-toggle-bar {
                 display: flex;
             }
@@ -1054,27 +1228,59 @@
 
         /* Base: hidden on desktop — square, same stroke as panel */
         #mob-shutter,
+        #mob-upload-more,
         #mob-flip,
-        #mob-capture-mode,
         #mob-download,
-        #mob-ratio {
+        #mob-ratio,
+        #mob-gallery {
             display: none;
             position: fixed;
             border-radius: 0;
             cursor: pointer;
-            border: 1px solid var(--border);
+            border: none;
             background: var(--fab-bg);
-            box-shadow: 0 3px 12px rgba(0, 0, 0, .2);
             transition: background .12s, transform .12s;
             z-index: 85
         }
 
+        /* Upload's backdrop is the plain white canvas, not a camera feed — the FABs'
+           translucent white would otherwise blend into it. Give them a real static shade
+           there, with a darker one for hover/press (no drop shadows anywhere per design). */
+        body.mode-upload #mob-gallery,
+        body.mode-upload #mob-download,
+        body.mode-upload #mob-upload-more {
+            background: var(--panel);
+        }
+
+        body.mode-upload #mob-gallery:active,
+        body.mode-upload #mob-download:active,
+        body.mode-upload #mob-upload-more:active {
+            background: var(--surface);
+        }
+
+        @media (hover: hover) {
+
+            body.mode-upload #mob-gallery:hover,
+            body.mode-upload #mob-download:hover,
+            body.mode-upload #mob-upload-more:hover {
+                background: var(--surface);
+            }
+        }
+
         #mob-shutter:active,
+        #mob-upload-more:active,
         #mob-flip:active,
-        #mob-capture-mode:active,
         #mob-download:active,
-        #mob-ratio:active {
+        #mob-ratio:active,
+        #mob-gallery:active {
             transform: scale(.97)
+        }
+
+        /* Mode-row container: transparent — only the active label gets a pill background */
+        #mob-capture-mode {
+            border: none;
+            box-shadow: none;
+            background: transparent;
         }
 
         /* Shutter — גובה 58px, מרכז תחתון */
@@ -1083,7 +1289,7 @@
             height: 58px;
             left: 50%;
             transform: translateX(-50%);
-            bottom: 78px
+            bottom: 20px
         }
 
         #mob-shutter:active {
@@ -1098,6 +1304,35 @@
             }
         }
 
+        /* Upload's shutter-equivalent — same size/position, an up-arrow instead of a
+           capture circle, always available (even with an image already loaded) so there's
+           a way to replace it. */
+        #mob-upload-more {
+            width: 44px;
+            height: 44px;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 27px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-size: 18px;
+            line-height: 1;
+            color: var(--text);
+        }
+
+        #mob-upload-more:active {
+            transform: translateX(-50%) scale(.88)
+        }
+
+        @media (hover:hover) {
+
+            #mob-upload-more:hover {
+                transform: translateX(-50%) scale(1.02);
+            }
+        }
+
         /* Inner square — smaller, centered, with clear gap from outer frame */
         #mob-shutter::before {
             content: '';
@@ -1108,21 +1343,43 @@
         }
 
         /* Recording state — inner square filled red */
+        /* Video mode selected (idle) — same red as actually recording, so the shutter
+           itself hints what tapping it will do, like a phone camera. */
+        #mob-shutter.mode-video::before,
         #mob-shutter.recording::before {
             background: #ff2b2b;
             border-color: #ff2b2b
         }
 
-        /* Flip camera — bottom-left (Live mobile) */
+        /* Actively recording — an orange ring around the shutter, gone the moment it stops.
+           A real border, not a box-shadow (no drop shadows anywhere in this UI). */
+        #mob-shutter.recording {
+            border: 3px solid #ff9500;
+        }
+
+        /* Flip camera — same row as the shutter, right side (Live mobile) */
         #mob-flip {
-            width: 44px;
-            height: 44px;
-            bottom: 86px;
-            left: 20px;
+            width: 40px;
+            height: 40px;
+            bottom: 29px;
+            right: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 0
+        }
+
+        /* Gallery — same row as the shutter, left side (Live only) */
+        #mob-gallery {
+            width: 40px;
+            height: 40px;
+            bottom: 29px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-size: 16px;
         }
 
         #mob-flip img {
@@ -1130,51 +1387,119 @@
             object-fit: contain
         }
 
-        /* Capture mode (image / video) — to the right of shutter, same row */
+        /* Photo/Video mode row — centered, just above the shutter, like a phone camera's
+           mode strip. Tap either label or swipe the viewfinder to switch. */
         #mob-capture-mode {
             display: none;
             position: fixed;
-            width: 56px;
-            height: 44px;
-            bottom: 86px;
-            left: calc(50% + 42px);
+            left: 50%;
+            bottom: 84px;
             transform: translateX(-50%);
-            margin-left: 34px;
+            z-index: 86;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .mob-mode-label {
+            border: none;
             border-radius: 0;
+            padding: 5px 10px;
+            background: transparent;
             cursor: pointer;
-            border: 1px solid var(--border);
-            background: var(--fab-bg);
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 700;
-            letter-spacing: .05em;
+            letter-spacing: .08em;
             text-transform: uppercase;
             font-family: 'IBM Plex Mono', monospace;
-            color: var(--text);
-            z-index: 85;
-            align-items: center;
-            justify-content: center;
-            padding: 0 4px;
+            color: #fff;
+            -webkit-text-fill-color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
+            opacity: .85;
+            transition: background .15s, color .15s, opacity .15s;
         }
 
-        #mob-capture-mode:active {
-            transform: translateX(-50%) scale(.95);
+        /* Upload's backdrop is the plain white canvas, not a camera feed — labels need
+           dark text there instead of white-on-shadow, and a real shade behind them
+           (instead of relying on a shadow/stroke) so they read against the white canvas. */
+        #mob-capture-mode.on-light-bg .mob-mode-label:not(.active) {
+            color: var(--muted);
+            -webkit-text-fill-color: var(--muted);
+            text-shadow: none;
+            background: var(--panel);
         }
 
-        @media (hover:hover) {
+        #mob-capture-mode.on-light-bg .mob-mode-label.active {
+            background: var(--surface);
+        }
 
-            /* Keep centered on hover (don't lose translateX) */
-            #mob-capture-mode:hover {
-                transform: translateX(-50%) scale(1.02);
+        @media (hover: hover) {
+
+            #mob-capture-mode.on-light-bg .mob-mode-label:not(.active):hover {
+                background: var(--surface);
             }
         }
 
+        .mob-mode-label.active {
+            background: var(--fab-bg);
+            color: var(--zoom-accent);
+            -webkit-text-fill-color: var(--zoom-accent);
+            text-shadow: none;
+            opacity: 1;
+        }
+
+        /* Quick zoom presets — small taps for common levels, above the mode row */
+        #mob-zoom-presets {
+            display: none;
+            position: fixed;
+            left: 50%;
+            bottom: 120px;
+            transform: translateX(-50%);
+            z-index: 86;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .mob-zoom-preset {
+            border: none;
+            border-radius: 0;
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            background: transparent;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: 'IBM Plex Mono', monospace;
+            color: #fff;
+            -webkit-text-fill-color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
+            opacity: .85;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mob-zoom-preset.active {
+            background: var(--fab-bg);
+            color: var(--zoom-accent);
+            -webkit-text-fill-color: var(--zoom-accent);
+            text-shadow: none;
+            opacity: 1;
+        }
+
         /* Download — bottom-left (Upload; Live uses preview modal) */
+        /* Same row, same size as flip/gallery on every screen (Upload here; Live uses
+           the preview modal instead, per downloadPixels()'s caller). */
         #mob-download {
-            width: 44px;
-            height: 44px;
-            bottom: 86px;
-            left: 20px;
-            right: auto;
+            width: 40px;
+            height: 40px;
+            bottom: 29px;
+            left: auto;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
             /* Must stay above the sliding panel when it's open */
             z-index: 130
         }
@@ -1187,49 +1512,32 @@
             color: var(--border)
         }
 
-        /* Live zoom FAB — bottom-right (Live only). Tapping it opens a horizontal
-           drag-to-zoom wheel above it, like the zoom dial in a phone's camera app. */
-        #mob-zoom {
-            position: fixed;
-            width: 54px;
-            height: 44px;
-            bottom: 86px;
-            right: 20px;
-            border-radius: 22px;
-            cursor: pointer;
-            border: 1px solid var(--border);
-            background: var(--fab-bg);
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: .02em;
-            font-family: 'IBM Plex Mono', monospace;
-            color: var(--text);
-            -webkit-text-fill-color: var(--text);
-            z-index: 140;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-            padding: 0;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        #mob-zoom-icon {
-            font-size: 13px;
-            line-height: 1;
-        }
-
+        /* Live zoom dial — hidden until a two-finger pinch on the viewfinder reveals it,
+           centered like a phone camera's zoom ruler. No visible trigger button for it. */
         #mob-zoom-pop {
             position: fixed;
-            right: 0;
-            bottom: 138px;
+            left: 50%;
+            bottom: 32px;
+            transform: translateX(-50%);
             width: 240px;
             height: 172px;
             padding: 0;
             border: none;
             background: transparent;
             z-index: 141;
+        }
+
+        /* While the zoom dial is open, everything else on the viewfinder gets out of the
+           way — same as a phone camera hides its other controls while you pinch-zoom. */
+        body.zoom-dial-active #mob-shutter,
+        body.zoom-dial-active #mob-flip,
+        body.zoom-dial-active #mob-capture-mode,
+        body.zoom-dial-active #mob-download,
+        body.zoom-dial-active #mob-ratio,
+        body.zoom-dial-active #mob-zoom-presets,
+        body.zoom-dial-active #mob-gallery,
+        body.zoom-dial-active #panel-toggle-bar {
+            display: none !important;
         }
 
         /* Curved zoom dial: a ruler bent along an arc, dragged directly (no native
@@ -1323,7 +1631,7 @@
 
         #install-prompt .install-btn {
             padding: 14px 24px;
-            border: 1px solid var(--border);
+            border: none;
             background: var(--text);
             color: var(--bg);
             font-size: 11px;
@@ -1356,11 +1664,8 @@
             style="display:none; font-size:11px; margin-top:10px; color:var(--text); font-weight:600;"></p>
         <button type="button" class="skip-btn" id="install-prompt-skip">Continue to app</button>
     </div>
-    <!-- Mobile top header: mode switch (IMAGE / LIVE) -->
-    <div id="mob-mode-header" aria-label="Modes">
-        <button type="button" class="mob-fm-btn" id="mob-fm-image"><span>Upload</span></button>
-        <button type="button" class="mob-fm-btn active" id="mob-fm-live"><span>Live</span></button>
-    </div>
+    <!-- Recording timer — shown only while actively recording video -->
+    <div id="mob-rec-timer" aria-hidden="true">00:00</div>
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
         <span>Pixelart Maker</span>
@@ -1370,6 +1675,9 @@
     <!-- Mobile camera controls -->
     <!-- Shutter: big circle at bottom center -->
     <button id="mob-shutter" aria-label="Capture"></button>
+    <!-- Upload mode's equivalent of the shutter: always available (even once an image is
+         already loaded) so there's a way to pick another one and replace it. -->
+    <button id="mob-upload-more" aria-label="Upload image" type="button" style="display:none">↑</button>
     <!-- Aspect ratio: top, Live only -->
     <button id="mob-ratio" aria-label="Aspect ratio" type="button" style="display:none">
         <img src="ratio_icon.png" alt="" width="22" height="22">
@@ -1381,20 +1689,57 @@
     <!-- Camera rotate: cycles 0/90/180/270 -->
     <button id="mob-rotate-cam" aria-label="Rotate camera" type="button"
         style="display:none; position:fixed; width:44px; height:44px; bottom:86px; right:70px; z-index:85; border:1px solid #000; background:#fff; font-size:20px; line-height:1; cursor:pointer; border-radius:0;">↻</button>
-    <!-- Download: small circle bottom-left -->
-    <button id="mob-capture-mode" aria-label="Capture mode" type="button">image</button>
+    <!-- Photo/Video mode: two labels, the active one lit up. Swiping the viewfinder or
+         tapping either label switches between them. Flip camera and Gallery flank it,
+         same row (Live only). -->
+    <div id="mob-capture-mode" style="display:none">
+        <button type="button" class="mob-mode-label" data-cap-mode="video">Video</button>
+        <button type="button" class="mob-mode-label active" data-cap-mode="image">Photo</button>
+        <button type="button" class="mob-mode-label" data-app-mode="image">Upload</button>
+    </div>
+    <button id="mob-gallery" aria-label="Gallery" type="button" style="display:none">▦</button>
     <button id="mob-download" aria-label="Download"></button>
-    <!-- Live Zoom: small button bottom-right (Live only) — opens a curved drag-to-zoom
-         dial, like a phone camera's zoom ruler. -->
-    <button id="mob-zoom" aria-label="Zoom" type="button" style="display:none">
-        <span id="mob-zoom-icon" aria-hidden="true">⊙</span><span id="mob-zoom-val">1×</span>
-    </button>
+    <!-- Quick zoom presets — small taps for common levels, above the shutter (Live only). -->
+    <div id="mob-zoom-presets" style="display:none"></div>
+    <!-- Live Zoom: pinch with two fingers on the viewfinder (Live only) to reveal this
+         curved drag-to-zoom dial, like a phone camera — no visible button for it. -->
     <div id="mob-zoom-pop" aria-hidden="true" style="display:none">
         <svg id="mob-zoom-dial" viewBox="0 0 240 172" width="240" height="172" role="slider"
             aria-label="Zoom level" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1">
             <g id="mob-zoom-ticks-g"></g>
             <text id="mob-zoom-dial-label" x="120" y="150" text-anchor="middle">1×</text>
         </svg>
+    </div>
+
+    <!-- Gallery: every photo/video captured this session. Tap a thumbnail to select it,
+         then Download or Delete. Nothing here survives a reload (same no-persistence rule
+         as the rest of the app) — it's an in-memory session roll, not storage. -->
+    <div id="gallery-screen" aria-hidden="true" style="display:none">
+        <div id="gallery-header">
+            <button type="button" id="gallery-close" aria-label="Close gallery">✕</button>
+            <span id="gallery-title">GALLERY</span>
+            <span id="gallery-count"></span>
+        </div>
+        <div id="gallery-grid"></div>
+        <div id="gallery-empty" style="display:none">No captures yet</div>
+        <div id="gallery-actions">
+            <button type="button" class="btn btn-outline" id="gallery-delete" disabled>Delete</button>
+            <button type="button" class="btn btn-fill" id="gallery-download" disabled>Download</button>
+        </div>
+    </div>
+
+    <!-- Single-item viewer: opened by tapping a thumbnail (not its selection circle).
+         Swipe left/right to move between captures. -->
+    <div id="gallery-viewer" aria-hidden="true" style="display:none">
+        <div id="gallery-viewer-header">
+            <button type="button" id="gallery-viewer-close" aria-label="Close">✕</button>
+            <span id="gallery-viewer-count"></span>
+        </div>
+        <div id="gallery-viewer-stage"></div>
+        <div id="gallery-viewer-actions">
+            <button type="button" class="btn btn-outline" id="gallery-viewer-delete">Delete</button>
+            <button type="button" class="btn btn-fill" id="gallery-viewer-download">Download</button>
+        </div>
     </div>
 
     <div id="app">
@@ -1753,15 +2098,17 @@
             if (state.mode === 'image' && state.srcImage) applyImage();
         });
 
-        // Fill mode switch – תמיד עוברים דרך switchToMode כדי לעצור מצלמה אם צריך
+        // Fill mode switch (desktop panel switcher; unreachable on phone-only format,
+        // kept for the inert desktop code path) – תמיד עוברים דרך switchToMode
         on('fm-image', 'click', () => switchToMode('image'));
         on('fm-live', 'click', () => switchToMode('live'));
-        on('mob-fm-image', 'click', () => switchToMode('image'));
-        on('mob-fm-live', 'click', () => switchToMode('live'));
 
         // Image upload
         const dropZone = document.getElementById('drop-zone');
         on('file-input', 'change', e => loadFile(e.target.files[0]));
+        // Upload's persistent "add/replace image" button — opens the same file picker
+        // the drop-zone uses, so it works whether or not an image is already loaded.
+        on('mob-upload-more', 'click', () => document.getElementById('file-input').click());
         if (dropZone) {
             dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
             dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
@@ -2218,8 +2565,8 @@
             return cnv;
         }
 
-        // Download = הקנבס עצמו: ב-Live העתקה של liveCoverCanvas, ב-Upload יחס הגריד
-        function downloadPixels() {
+        // הקנבס עצמו: ב-Live העתקה של liveCoverCanvas, ב-Upload יחס הגריד
+        function buildDownloadCanvas() {
             var cnv;
             if (state.mode === 'live' && liveCoverCanvas && liveCoverCanvas.width > 0 && liveCoverCanvas.height > 0) {
                 cnv = document.createElement('canvas');
@@ -2243,7 +2590,15 @@
                 ctx.fillRect(0, 0, cnv.width, cnv.height);
                 drawGridToContext(ctx, cnv.width, cnv.height);
             }
-            openExportPreview(cnv, `pixel_art_maker_${Date.now()}.png`);
+            return cnv;
+        }
+        function downloadPixels() {
+            openExportPreview(buildDownloadCanvas(), `pixel_art_maker_${Date.now()}.png`);
+        }
+        // Upload mode's floating Download FAB sends the edited result to the gallery
+        // instead — same as Live's shutter — rather than downloading straight away.
+        function saveUploadResultToGallery() {
+            addToGallery({ type: 'image', canvas: buildDownloadCanvas(), fileName: `pixel_art_maker_${Date.now()}.png` });
         }
         document.getElementById('dl-pixels').addEventListener('click', downloadPixels);
         document.getElementById('btn-clear').addEventListener('click', () => { resetCells(); renderGrid(); });
@@ -2268,6 +2623,12 @@
             didSetMobileFacingDefault: false,
             didSetMobileZoomDefault: false,
             didApplyMobileHardwareZoomDefault: false,
+            // 0.5x isn't a digital zoom value most hardware can reach via the zoom
+            // constraint — it's a physically separate ultra-wide lens on the back camera.
+            // These track whether we've switched the whole stream to that lens.
+            usingUltraWide: false,
+            ultraWideDeviceId: null,
+            ultraWideChecked: false,
         };
 
         // Single source of truth: target preview ratio by breakpoint.
@@ -2350,6 +2711,40 @@
             return { x: ZOOM_DIAL_CX + radius * Math.cos(rad), y: ZOOM_DIAL_CY - radius * Math.sin(rad) };
         }
 
+        function renderZoomPresets() {
+            const box = document.getElementById('mob-zoom-presets');
+            if (!box) return;
+            const { min, max } = __liveZoomRange || { min: 1, max: 2 };
+            const candidates = [min, 1, max].filter((v) => v >= min - 1e-9 && v <= max + 1e-9);
+            const uniq = Array.from(new Set(candidates.map((v) => +v.toFixed(2)))).sort((a, b) => a - b);
+            let html = uniq.map((v) => {
+                let label = v.toFixed(1);
+                label = label.replace(/\.0$/, '');
+                return `<button type="button" class="mob-zoom-preset" data-z="${v}">${label}×</button>`;
+            }).join('');
+            // 0.5x is a separate physical ultra-wide lens, not a value the zoom constraint
+            // above can reach on most hardware — offer it as its own preset (back camera
+            // only; there's no ultra-wide selfie lens) unless the digital range already
+            // covers it on its own (some Android devices genuinely do).
+            if (liveState.facingMode === 'environment' && !uniq.some((v) => Math.abs(v - 0.5) < 1e-9)) {
+                html = `<button type="button" class="mob-zoom-preset" data-z="0.5" data-ultra-wide="1">.5×</button>` + html;
+            }
+            box.innerHTML = html;
+            updateZoomPresetsActive(liveState.usingUltraWide ? 0.5 : (liveState.userZoom || min));
+        }
+
+        function updateZoomPresetsActive(value) {
+            const box = document.getElementById('mob-zoom-presets');
+            if (!box) return;
+            const buttons = box.querySelectorAll('.mob-zoom-preset');
+            let closest = null, closestDist = Infinity;
+            buttons.forEach((b) => {
+                const d = Math.abs(parseFloat(b.dataset.z) - value);
+                if (d < closestDist) { closestDist = d; closest = b; }
+            });
+            buttons.forEach((b) => b.classList.toggle('active', b === closest));
+        }
+
         function renderZoomTicks() {
             const g = document.getElementById('mob-zoom-ticks-g');
             const dial = document.getElementById('mob-zoom-dial');
@@ -2422,11 +2817,8 @@
             const r = __liveZoomRange || { min: 1, max: 2 };
             const z = Math.max(r.min, Math.min(r.max, Number(val) || 1));
             liveState.userZoom = z;
-            let zStr = z.toFixed(2);
-            if (zStr.indexOf('.') !== -1) zStr = zStr.replace(/0+$/, '').replace(/\.$/, '');
-            const valEl = document.getElementById('mob-zoom-val');
-            if (valEl) valEl.textContent = zStr + '×';
             updateZoomDialIndicator(z);
+            updateZoomPresetsActive(z);
         }
 
         function applyHardwareZoomIfPossible(val) {
@@ -2443,27 +2835,34 @@
         }
 
         function wireMobileZoomUI() {
-            const fab = document.getElementById('mob-zoom');
             const pop = document.getElementById('mob-zoom-pop');
             const dial = document.getElementById('mob-zoom-dial');
-            if (!fab || !pop || !dial) return;
-            if (fab.__wired) return;
-            fab.__wired = true;
+            if (!pop || !dial) return;
+            if (dial.__wired) return;
+            dial.__wired = true;
 
-            function openPop() { pop.style.display = 'flex'; pop.setAttribute('aria-hidden', 'false'); }
-            function closePop() { pop.style.display = 'none'; pop.setAttribute('aria-hidden', 'true'); }
-            function togglePop() { (pop.style.display === 'flex') ? closePop() : openPop(); }
-
-            fab.addEventListener('click', (e) => { e.stopPropagation(); togglePop(); });
-            document.addEventListener('click', (e) => {
-                if (pop.style.display !== 'flex') return;
-                if (e.target === pop || pop.contains(e.target) || e.target === fab) return;
-                closePop();
-            });
+            let closeTimer = null;
+            function cancelScheduledClose() { clearTimeout(closeTimer); closeTimer = null; }
+            function scheduleClose(delay) {
+                cancelScheduledClose();
+                closeTimer = setTimeout(closePop, delay || 900);
+            }
+            function openPop() {
+                cancelScheduledClose();
+                pop.style.display = 'block';
+                pop.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('zoom-dial-active');
+            }
+            function closePop() {
+                cancelScheduledClose();
+                pop.style.display = 'none';
+                pop.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('zoom-dial-active');
+            }
 
             // Drag anywhere on the dial — the angle from its center to your finger maps to
             // a zoom value, updated (and applied to the camera) live as you move, not just
-            // on release.
+            // on release. Lets you fine-tune after the pinch below reveals the dial.
             let dragging = false;
             function pointToZoom(clientX, clientY) {
                 const rect = dial.getBoundingClientRect();
@@ -2480,15 +2879,49 @@
             }
             dial.addEventListener('pointerdown', (e) => {
                 dragging = true;
+                cancelScheduledClose();
                 try { dial.setPointerCapture(e.pointerId); } catch (_) { }
+                leaveUltraWideIfNeeded();
                 pointToZoom(e.clientX, e.clientY);
             });
             dial.addEventListener('pointermove', (e) => { if (dragging) pointToZoom(e.clientX, e.clientY); });
             dial.addEventListener('pointerup', (e) => {
                 dragging = false;
                 try { dial.releasePointerCapture(e.pointerId); } catch (_) { }
+                scheduleClose();
             });
-            dial.addEventListener('pointercancel', () => { dragging = false; });
+            dial.addEventListener('pointercancel', () => { dragging = false; scheduleClose(); });
+
+            // Pinch with two fingers on the viewfinder — like a phone camera — reveals the
+            // dial (hiding the other buttons) and scrubs zoom by how much the pinch has
+            // opened/closed since it started; releasing lets it fade back after a beat.
+            let pinchStartDist = 0, pinchStartZoom = 1, pinching = false;
+            function touchDist(a, b) {
+                const dx = a.clientX - b.clientX, dy = a.clientY - b.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            gridCanvas.addEventListener('touchstart', (e) => {
+                if (state.mode !== 'live' || !e.touches || e.touches.length !== 2) return;
+                pinching = true;
+                pinchStartDist = touchDist(e.touches[0], e.touches[1]) || 1;
+                pinchStartZoom = liveState.userZoom || 1;
+                leaveUltraWideIfNeeded();
+                openPop();
+            }, { passive: true });
+            gridCanvas.addEventListener('touchmove', (e) => {
+                if (!pinching || !e.touches || e.touches.length !== 2) return;
+                const d = touchDist(e.touches[0], e.touches[1]);
+                const { min, max } = __liveZoomRange || { min: 1, max: 2 };
+                const v = Math.max(min, Math.min(max, pinchStartZoom * (d / pinchStartDist)));
+                setZoomUIValue(v);
+                applyHardwareZoomIfPossible(v);
+            }, { passive: true });
+            gridCanvas.addEventListener('touchend', (e) => {
+                if (!pinching || (e.touches && e.touches.length >= 2)) return;
+                pinching = false;
+                scheduleClose();
+            }, { passive: true });
+            gridCanvas.addEventListener('touchcancel', () => { pinching = false; scheduleClose(); }, { passive: true });
 
             setZoomUIValue(liveState.userZoom || 1);
             closePop();
@@ -2540,8 +2973,7 @@
             const idealH = idealLong;
             const idealW = Math.max(360, Math.round(idealLong * desiredAR));
 
-            return {
-                facingMode: liveState.facingMode,
+            const base = {
                 width: { ideal: idealW },
                 height: { ideal: idealH },
                 aspectRatio: { ideal: desiredAR },
@@ -2551,6 +2983,69 @@
                     { width: 1080, height: 1920 },
                 ]
             };
+            // 0.5x: a specific physical lens, not the zoom constraint — request it by
+            // deviceId instead of facingMode (mutually exclusive with facingMode).
+            if (liveState.usingUltraWide && liveState.ultraWideDeviceId) {
+                return Object.assign({ deviceId: { exact: liveState.ultraWideDeviceId } }, base);
+            }
+            return Object.assign({ facingMode: liveState.facingMode }, base);
+        }
+
+        // Finds the back ultra-wide camera's deviceId, if this device exposes one as its
+        // own enumerable input (iOS Safari and most Android browsers do, labeled with
+        // "ultra wide" once camera permission has been granted at least once). There's no
+        // capability flag for this — matching the label is the only cross-browser way.
+        async function findUltraWideDeviceId() {
+            if (liveState.ultraWideChecked) return liveState.ultraWideDeviceId;
+            liveState.ultraWideChecked = true;
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const match = devices.find((d) => d.kind === 'videoinput' && /ultra.?wide/i.test(d.label));
+                liveState.ultraWideDeviceId = match ? match.deviceId : null;
+            } catch (_) {
+                liveState.ultraWideDeviceId = null;
+            }
+            return liveState.ultraWideDeviceId;
+        }
+
+        // 0.5x sits below what setZoomUIValue()'s clamping allows (it's built for the
+        // continuous digital-zoom dial's own min/max) — mark it active directly instead.
+        function markUltraWideActive() {
+            liveState.userZoom = 0.5;
+            updateZoomPresetsActive(0.5);
+        }
+
+        // Switching to/from the ultra-wide lens replaces the whole stream (it's a separate
+        // physical camera, not a zoom level on the current one) — same restart flipCamera()
+        // already does. Falls back to the closest available digital zoom if this device
+        // has no separate ultra-wide input (most laptops/desktops, some Android phones).
+        async function setUltraWideZoom() {
+            if (liveState.facingMode !== 'environment') {
+                applyHardwareZoomIfPossible(0.5);
+                setZoomUIValue(liveState.userZoom);
+                return;
+            }
+            const id = await findUltraWideDeviceId();
+            if (!id) {
+                const { min } = __liveZoomRange || { min: 1 };
+                applyHardwareZoomIfPossible(min);
+                setZoomUIValue(min);
+                return;
+            }
+            if (liveState.usingUltraWide) { markUltraWideActive(); return; }
+            liveState.usingUltraWide = true;
+            stopCamera();
+            await startCamera();
+            markUltraWideActive();
+        }
+
+        // Leaving 0.5x (tapping any other preset, or dragging the dial) switches back to
+        // the normal camera if we're currently on the ultra-wide lens.
+        async function leaveUltraWideIfNeeded() {
+            if (!liveState.usingUltraWide) return;
+            liveState.usingUltraWide = false;
+            stopCamera();
+            await startCamera();
         }
 
         function sampleLiveFrame() {
@@ -2710,6 +3205,7 @@
                         __liveZoomCaps = (cap && cap.zoom) ? cap.zoom : null;
                         computeLiveZoomRange();
                         renderZoomTicks();
+                        renderZoomPresets();
                         try {
                             // Apply preferred mobile zoom (0.5x) once; else keep current.
                             if (isMobileLayout() && !liveState.didApplyMobileHardwareZoomDefault && __liveZoomCaps && typeof __liveZoomCaps.min === 'number') {
@@ -2783,6 +3279,7 @@
                 state.gap = 0;
             }
             state.mode = mode;
+            document.body.classList.toggle('mode-upload', mode === 'image');
             document.querySelectorAll('.fm-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.mob-fm-btn').forEach(b => b.classList.remove('active'));
             var liveOpts = document.getElementById('live-options');
@@ -2808,6 +3305,7 @@
                 startCamera();
             }
             if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
+            if (typeof updateModeRowActive === 'function') updateModeRowActive();
         }
 
         // Live colors are derived from the selected palette preset
@@ -2818,10 +3316,11 @@
         const panelToggleBar = document.getElementById('panel-toggle-bar');
         const panel = document.getElementById('panel');
         const mobShutter = document.getElementById('mob-shutter');
+        const mobUploadMore = document.getElementById('mob-upload-more');
         const mobFlip = document.getElementById('mob-flip');
         const mobDl = document.getElementById('mob-download');
         const mobRatio = document.getElementById('mob-ratio');
-        const mobZoom = document.getElementById('mob-zoom');
+        const mobGallery = document.getElementById('mob-gallery');
         const mobZoomPop = document.getElementById('mob-zoom-pop');
 
         // Mobile FAB visibility by mode:
@@ -2830,51 +3329,53 @@
         function updateMobileButtonsForMode() {
             const isSmall = isMobileLayout();
             var modeBtn = document.getElementById('mob-capture-mode');
+            var zoomPresets = document.getElementById('mob-zoom-presets');
             if (!isSmall) {
                 mobShutter.style.display = 'none';
+                if (mobUploadMore) mobUploadMore.style.display = 'none';
                 mobFlip.style.display = 'none';
                 mobDl.style.display = 'none';
-                if (mobZoom) mobZoom.style.display = 'none';
                 if (mobZoomPop) mobZoomPop.style.display = 'none';
                 if (mobRatio) mobRatio.style.display = 'none';
                 if (modeBtn) modeBtn.style.display = 'none';
+                if (mobGallery) mobGallery.style.display = 'none';
+                if (zoomPresets) zoomPresets.style.display = 'none';
                 return;
             }
 
-            const panelOpen = panel.classList.contains('panel-open');
-            if (panelOpen) {
-                mobShutter.style.display = 'none';
-                mobFlip.style.display = 'none';
-                // Keep Download available in Upload even when panel is open.
-                // In Live we download via the preview modal (from shutter/record stop), so keep it hidden.
-                mobDl.style.display = (state.mode === 'live') ? 'none' : 'block';
-                if (mobZoom) mobZoom.style.display = (state.mode === 'live') ? 'flex' : 'none';
-                if (mobRatio) mobRatio.style.display = 'none';
-                if (modeBtn) modeBtn.style.display = 'none';
-                return;
-            }
+            // The panel now opens downward from the top bar, so it no longer overlaps the
+            // bottom controls — no need to hide them while it's open (unlike before, when
+            // the panel was a bottom sheet that would sit on top of them).
 
             // Mobile download FAB:
             // - In Live we download via the preview modal, so hide this button.
-            // - In Upload keep it available.
-            mobDl.style.display = (state.mode === 'live') ? 'none' : 'block';
-            if (mobZoom) mobZoom.style.display = (state.mode === 'live') ? 'flex' : 'none';
+            // - In Upload keep it available — it now sends the result to the gallery
+            //   (saveUploadResultToGallery), same row/size as flip, right side.
+            mobDl.style.display = (state.mode === 'live') ? 'none' : 'flex';
             if (mobZoomPop && state.mode !== 'live') mobZoomPop.style.display = 'none';
+
+            // The Video/Photo/Upload row is the app's one mode switcher now — always visible
+            // on mobile (panel closed), regardless of which mode is currently active.
+            if (modeBtn) modeBtn.style.display = 'flex';
+            // Gallery is available from both modes now (Upload sends its result there too).
+            if (mobGallery) mobGallery.style.display = 'flex';
 
             if (state.mode === 'live') {
                 mobShutter.style.display = 'block';
+                if (mobUploadMore) mobUploadMore.style.display = 'none';
                 mobFlip.style.display = 'flex';
                 // Ratio button disabled on mobile: Live fits device automatically
                 if (mobRatio) mobRatio.style.display = 'none';
-                if (modeBtn) {
-                    modeBtn.style.display = 'flex';
-                    modeBtn.textContent = state.captureMode === 'video' ? 'video' : 'image';
-                }
+                if (zoomPresets) zoomPresets.style.display = 'flex';
             } else {
                 mobShutter.style.display = 'none';
+                // Upload's shutter-equivalent: always available, even with an image already
+                // loaded, so there's a way to replace it (the drop-zone itself only shows
+                // before the first image is picked).
+                if (mobUploadMore) mobUploadMore.style.display = 'flex';
                 mobFlip.style.display = 'none';
                 if (mobRatio) mobRatio.style.display = 'none';
-                if (modeBtn) modeBtn.style.display = 'none';
+                if (zoomPresets) zoomPresets.style.display = 'none';
             }
         }
 
@@ -2925,6 +3426,9 @@
             liveState.userSetFacing = true;
             liveState.facingMode = liveState.facingMode === 'user' ? 'environment' : 'user';
             liveState.mirror = (liveState.facingMode === 'user');
+            // No ultra-wide selfie lens — flipping to the front camera always means the
+            // normal one.
+            liveState.usingUltraWide = false;
             stopCamera();
             startCamera();
         }
@@ -2953,12 +3457,44 @@
         if (mobRatio) mobRatio.addEventListener('click', cycleAspectRatio);
 
         var mobCaptureModeBtn = document.getElementById('mob-capture-mode');
+        function updateModeRowActive() {
+            if (!mobCaptureModeBtn) return;
+            // Inactive labels are white-on-shadow so they read over a busy camera feed;
+            // Upload's backdrop is the plain white canvas, so flip them dark there instead.
+            mobCaptureModeBtn.classList.toggle('on-light-bg', state.mode !== 'live');
+            mobCaptureModeBtn.querySelectorAll('.mob-mode-label').forEach((b) => {
+                const isActive = b.dataset.appMode
+                    ? state.mode === b.dataset.appMode
+                    : (state.mode === 'live' && state.captureMode === b.dataset.capMode);
+                b.classList.toggle('active', isActive);
+            });
+        }
         function setCaptureMode(mode) {
             state.captureMode = (mode === 'video') ? 'video' : 'image';
-            if (mobCaptureModeBtn) mobCaptureModeBtn.textContent = state.captureMode;
+            if (mobShutter) mobShutter.classList.toggle('mode-video', state.captureMode === 'video');
+            updateModeRowActive();
         }
-        if (mobCaptureModeBtn) mobCaptureModeBtn.addEventListener('click', function () {
-            setCaptureMode(state.captureMode === 'image' ? 'video' : 'image');
+        if (mobCaptureModeBtn) mobCaptureModeBtn.addEventListener('click', function (e) {
+            const btn = e.target.closest('.mob-mode-label');
+            if (!btn) return;
+            if (btn.dataset.appMode) { switchToMode(btn.dataset.appMode); return; }
+            if (state.mode !== 'live') switchToMode('live');
+            setCaptureMode(btn.dataset.capMode);
+        });
+
+        var mobZoomPresets = document.getElementById('mob-zoom-presets');
+        if (mobZoomPresets) mobZoomPresets.addEventListener('click', function (e) {
+            const btn = e.target.closest('.mob-zoom-preset');
+            if (!btn) return;
+            const v = parseFloat(btn.dataset.z) || 1;
+            if (btn.dataset.ultraWide) {
+                setUltraWideZoom();
+                return;
+            }
+            leaveUltraWideIfNeeded().then(() => {
+                setZoomUIValue(v);
+                applyHardwareZoomIfPossible(v);
+            });
         });
 
         // Swipe left/right on the viewfinder to switch Photo <-> Video, like a phone camera's mode row.
@@ -2997,12 +3533,33 @@
             }
         }
 
+        var recTimerInterval = null, recStartTime = 0;
+        function startRecTimer() {
+            const el = document.getElementById('mob-rec-timer');
+            recStartTime = Date.now();
+            if (el) { el.textContent = '00:00'; el.style.display = 'flex'; }
+            clearInterval(recTimerInterval);
+            recTimerInterval = setInterval(function () {
+                const secs = Math.floor((Date.now() - recStartTime) / 1000);
+                const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+                const ss = String(secs % 60).padStart(2, '0');
+                if (el) el.textContent = mm + ':' + ss;
+            }, 500);
+        }
+        function stopRecTimer() {
+            clearInterval(recTimerInterval);
+            recTimerInterval = null;
+            const el = document.getElementById('mob-rec-timer');
+            if (el) el.style.display = 'none';
+        }
+
         function toggleVideoRecording() {
             if (!liveState.stream) return;
             if (liveVideoRecorder && liveVideoRecorder.state === 'recording') {
                 stopRecordInterval();
                 liveVideoRecorder.stop();
                 mobShutter.classList.remove('recording');
+                stopRecTimer();
                 liveRecordCanvas = null;
                 liveRecordCtx = null;
                 return;
@@ -3034,6 +3591,7 @@
             liveVideoRecorder.onstop = function () {
                 stopRecordInterval();
                 mobShutter.classList.remove('recording');
+                stopRecTimer();
                 liveRecordCanvas = null;
                 liveRecordCtx = null;
                 if (recordedChunks.length === 0) return;
@@ -3042,7 +3600,7 @@
                 var ext = mimeType.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
                 var blob = new Blob(recordedChunks, { type: mimeType });
                 var fileName = 'pixelmaker_' + Date.now() + '.' + ext;
-                openVideoExportPreview(blob, fileName, mimeType);
+                addToGallery({ type: 'video', blob, mimeType, fileName });
                 liveVideoRecorder = null;
             };
             liveVideoRecorder.start(1000 / LIVE_RECORD_FPS);
@@ -3052,7 +3610,245 @@
                 }
             }, 1000 / LIVE_RECORD_FPS);
             mobShutter.classList.add('recording');
+            startRecTimer();
         }
+
+        // ═══════════════════════════════════════════════════
+        //  GALLERY — in-memory only, cleared on reload like everything else in this app
+        // ═══════════════════════════════════════════════════
+        var galleryItems = []; // newest first: { id, type, url, mimeType, fileName, selected }
+        var galleryIdSeq = 0;
+
+        function addToGallery(item) {
+            if (item.type === 'image') {
+                item.canvas.toBlob(function (blob) {
+                    if (!blob) return;
+                    addGalleryEntry({ type: 'image', blob: blob, mimeType: 'image/png', fileName: item.fileName });
+                }, 'image/png');
+            } else {
+                addGalleryEntry({ type: 'video', blob: item.blob, mimeType: item.mimeType, fileName: item.fileName });
+            }
+        }
+
+        function addGalleryEntry(entry) {
+            entry.id = 'g' + (++galleryIdSeq);
+            entry.url = URL.createObjectURL(entry.blob);
+            entry.selected = false;
+            galleryItems.unshift(entry);
+            updateGalleryFabThumb();
+            if (document.getElementById('gallery-screen').style.display !== 'none') renderGallery();
+        }
+
+        function updateGalleryFabThumb() {
+            if (!mobGallery) return;
+            const latest = galleryItems[0];
+            if (!latest) { mobGallery.classList.remove('has-thumb'); mobGallery.textContent = '▦'; return; }
+            mobGallery.classList.add('has-thumb');
+            mobGallery.innerHTML = '';
+            const img = document.createElement('img');
+            img.alt = '';
+            if (latest.type === 'video') {
+                // Cheapest reliable thumbnail: let the browser decode frame 0 into an <img>-like
+                // preview via a muted <video>; swapped for a real <img> once available.
+                const v = document.createElement('video');
+                v.src = latest.url; v.muted = true; v.playsInline = true;
+                v.style.width = '100%'; v.style.height = '100%'; v.style.objectFit = 'cover';
+                mobGallery.appendChild(v);
+            } else {
+                img.src = latest.url;
+                mobGallery.appendChild(img);
+            }
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('gallery-grid');
+            const empty = document.getElementById('gallery-empty');
+            const countEl = document.getElementById('gallery-count');
+            const delBtn = document.getElementById('gallery-delete');
+            const dlBtn = document.getElementById('gallery-download');
+            if (!grid) return;
+            grid.innerHTML = '';
+            if (galleryItems.length === 0) {
+                grid.style.display = 'none';
+                if (empty) empty.style.display = 'flex';
+            } else {
+                grid.style.display = 'grid';
+                if (empty) empty.style.display = 'none';
+                galleryItems.forEach((item) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'gallery-item' + (item.selected ? ' selected' : '');
+                    cell.dataset.id = item.id;
+                    if (item.type === 'video') {
+                        const v = document.createElement('video');
+                        v.src = item.url; v.muted = true; v.playsInline = true;
+                        cell.appendChild(v);
+                        const badge = document.createElement('span');
+                        badge.className = 'gallery-video-badge'; badge.textContent = '▶';
+                        cell.appendChild(badge);
+                    } else {
+                        const img = document.createElement('img');
+                        img.src = item.url; img.alt = '';
+                        cell.appendChild(img);
+                    }
+                    const check = document.createElement('span');
+                    check.className = 'gallery-check';
+                    cell.appendChild(check);
+                    grid.appendChild(cell);
+                });
+            }
+            const selCount = galleryItems.filter((i) => i.selected).length;
+            if (countEl) countEl.textContent = galleryItems.length ? (selCount ? selCount + ' selected' : galleryItems.length + ' items') : '';
+            if (delBtn) delBtn.disabled = selCount === 0;
+            if (dlBtn) dlBtn.disabled = selCount === 0;
+        }
+
+        function openGallery() {
+            const screen = document.getElementById('gallery-screen');
+            if (!screen) return;
+            screen.style.display = 'flex';
+            screen.setAttribute('aria-hidden', 'false');
+            renderGallery();
+        }
+        function closeGallery() {
+            const screen = document.getElementById('gallery-screen');
+            if (!screen) return;
+            screen.style.display = 'none';
+            screen.setAttribute('aria-hidden', 'true');
+        }
+
+        if (mobGallery) mobGallery.addEventListener('click', openGallery);
+        const galleryCloseBtn = document.getElementById('gallery-close');
+        if (galleryCloseBtn) galleryCloseBtn.addEventListener('click', closeGallery);
+
+        const galleryGrid = document.getElementById('gallery-grid');
+        if (galleryGrid) galleryGrid.addEventListener('click', (e) => {
+            const cell = e.target.closest('.gallery-item');
+            if (!cell) return;
+            const item = galleryItems.find((i) => i.id === cell.dataset.id);
+            if (!item) return;
+            if (e.target.closest('.gallery-check')) {
+                item.selected = !item.selected;
+                renderGallery();
+                return;
+            }
+            openViewer(galleryItems.indexOf(item));
+        });
+
+        function downloadGalleryItem(item) {
+            const a = document.createElement('a');
+            a.href = item.url;
+            a.download = item.fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        const galleryDeleteBtn = document.getElementById('gallery-delete');
+        if (galleryDeleteBtn) galleryDeleteBtn.addEventListener('click', () => {
+            const keep = [];
+            galleryItems.forEach((item) => {
+                if (item.selected) { try { URL.revokeObjectURL(item.url); } catch (_) { } }
+                else keep.push(item);
+            });
+            galleryItems = keep;
+            updateGalleryFabThumb();
+            renderGallery();
+        });
+
+        const galleryDownloadBtn = document.getElementById('gallery-download');
+        if (galleryDownloadBtn) galleryDownloadBtn.addEventListener('click', () => {
+            const selected = galleryItems.filter((i) => i.selected);
+            selected.forEach((item, i) => {
+                setTimeout(() => downloadGalleryItem(item), i * 300);
+            });
+        });
+
+        // Single-item viewer — tap a thumbnail (not its selection circle) to open here;
+        // swipe left/right to move between captures, like a normal phone photo gallery.
+        var viewerIndex = -1;
+        function renderViewerItem() {
+            const stage = document.getElementById('gallery-viewer-stage');
+            const countEl = document.getElementById('gallery-viewer-count');
+            if (!stage) return;
+            const item = galleryItems[viewerIndex];
+            if (!item) { closeViewer(); return; }
+            stage.innerHTML = '';
+            if (item.type === 'video') {
+                const v = document.createElement('video');
+                v.src = item.url; v.controls = true; v.playsInline = true; v.autoplay = false;
+                stage.appendChild(v);
+            } else {
+                const img = document.createElement('img');
+                img.src = item.url; img.alt = '';
+                stage.appendChild(img);
+            }
+            if (countEl) countEl.textContent = (viewerIndex + 1) + ' / ' + galleryItems.length;
+        }
+        function openViewer(index) {
+            viewerIndex = index;
+            const screen = document.getElementById('gallery-viewer');
+            if (!screen) return;
+            screen.style.display = 'flex';
+            screen.setAttribute('aria-hidden', 'false');
+            renderViewerItem();
+        }
+        function closeViewer() {
+            const screen = document.getElementById('gallery-viewer');
+            if (!screen) return;
+            screen.style.display = 'none';
+            screen.setAttribute('aria-hidden', 'true');
+            document.getElementById('gallery-viewer-stage').innerHTML = '';
+            viewerIndex = -1;
+        }
+        function viewerStep(dir) {
+            if (galleryItems.length === 0) { closeViewer(); return; }
+            viewerIndex = (viewerIndex + dir + galleryItems.length) % galleryItems.length;
+            renderViewerItem();
+        }
+
+        const galleryViewerCloseBtn = document.getElementById('gallery-viewer-close');
+        if (galleryViewerCloseBtn) galleryViewerCloseBtn.addEventListener('click', closeViewer);
+
+        const galleryViewerDeleteBtn = document.getElementById('gallery-viewer-delete');
+        if (galleryViewerDeleteBtn) galleryViewerDeleteBtn.addEventListener('click', () => {
+            const item = galleryItems[viewerIndex];
+            if (!item) return;
+            try { URL.revokeObjectURL(item.url); } catch (_) { }
+            galleryItems.splice(viewerIndex, 1);
+            updateGalleryFabThumb();
+            if (galleryItems.length === 0) { closeViewer(); }
+            else { viewerIndex = Math.min(viewerIndex, galleryItems.length - 1); renderViewerItem(); }
+            if (document.getElementById('gallery-screen').style.display !== 'none') renderGallery();
+        });
+
+        const galleryViewerDownloadBtn = document.getElementById('gallery-viewer-download');
+        if (galleryViewerDownloadBtn) galleryViewerDownloadBtn.addEventListener('click', () => {
+            const item = galleryItems[viewerIndex];
+            if (item) downloadGalleryItem(item);
+        });
+
+        // Swipe left/right on the viewer stage to move between captures
+        (function () {
+            const stage = document.getElementById('gallery-viewer-stage');
+            if (!stage) return;
+            let sx = 0, sy = 0, tracking = false;
+            const SWIPE_MIN = 40;
+            stage.addEventListener('touchstart', (e) => {
+                if (!e.touches || e.touches.length !== 1) { tracking = false; return; }
+                tracking = true;
+                sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+            }, { passive: true });
+            stage.addEventListener('touchend', (e) => {
+                if (!tracking) return;
+                tracking = false;
+                const t = e.changedTouches && e.changedTouches[0];
+                if (!t) return;
+                const dx = t.clientX - sx, dy = t.clientY - sy;
+                if (Math.abs(dx) > SWIPE_MIN && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    viewerStep(dx < 0 ? 1 : -1);
+                }
+            }, { passive: true });
+        })();
 
         // Shutter: in live mode → snapshot (image) or start/stop video; only visible in Live
         if (mobShutter) mobShutter.addEventListener('click', () => {
@@ -3078,14 +3874,14 @@
                         ctx.fillRect(0, 0, dim.w, dim.h);
                         drawGridToContext(ctx, dim.w, dim.h);
                     }
-                    openExportPreview(cnv, 'pixel_art_maker_capture_' + Date.now() + '.png');
+                    addToGallery({ type: 'image', canvas: cnv, fileName: 'pixel_art_maker_capture_' + Date.now() + '.png' });
                     // Stay in Live after capture (don't stop camera / don't switch modes)
                 }
             }
         });
 
         // Download: always downloads the pixel fill image
-        if (mobDl) mobDl.addEventListener('click', downloadPixels);
+        if (mobDl) mobDl.addEventListener('click', saveUploadResultToGallery);
 
 
         // ═══════════════════════════════════════════════════
@@ -3153,7 +3949,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v44';
+            const __BUILD = 'v62';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3187,7 +3983,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=45';
+            const __SW_URL = 'sw.js?v=62';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

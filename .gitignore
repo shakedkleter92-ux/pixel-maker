@@ -1,2 +1,3 @@
 .DS_Store
 .tmp_pillow/
+.claude/settings.local.json
