@@ -2970,14 +2970,26 @@
 
         function getLiveVideoConstraints() {
             const mode = getLayoutMode();
-            // Request a stream that matches our target ratio for this breakpoint.
-            // Browsers may ignore, but when honored it prevents "stuck 16:9" on mobile.
+            const idealLong = (mode === 'desktop') ? 1920 : (mode === 'tablet' ? 1440 : 1280);
+
+            // Front/selfie camera: don't ask the hardware for our narrow 9:16 target —
+            // many front-camera drivers satisfy a narrow aspectRatio request by digitally
+            // zooming into the sensor's center rather than just slicing off the sides,
+            // which is what made 1x look unnaturally tight on a face (the sensor itself was
+            // being told to pre-crop, before our own "cover" crop below ever saw the frame).
+            // Ask for the sensor's natural resolution with no aspect constraint instead, and
+            // let sampleLiveFrame()'s cover-fit do all the cropping down to 9:16 from that
+            // fuller capture — same idea as a real camera app keeping 1x at full native FOV.
+            if (liveState.facingMode === 'user') {
+                return { facingMode: 'user', width: { ideal: idealLong }, height: { ideal: idealLong } };
+            }
+
+            // Back camera: request a stream that matches our target ratio for this
+            // breakpoint. Browsers may ignore, but when honored it prevents "stuck 16:9"
+            // on mobile — the back camera's much higher native resolution means this
+            // narrower crop still keeps plenty of real detail/FOV, unlike the front one.
             let desiredAR = getLiveTargetRatioValue(); // width/height, portrait < 1
             if (desiredAR > 1) desiredAR = 1 / desiredAR;
-
-            // Choose a sensible ideal resolution per breakpoint (portrait).
-            // (width/height are only "ideal", so devices can pick the closest supported.)
-            const idealLong = (mode === 'desktop') ? 1920 : (mode === 'tablet' ? 1440 : 1280);
             const idealH = idealLong;
             const idealW = Math.max(360, Math.round(idealLong * desiredAR));
 
@@ -3961,7 +3973,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v64';
+            const __BUILD = 'v65';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3995,7 +4007,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=64';
+            const __SW_URL = 'sw.js?v=65';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

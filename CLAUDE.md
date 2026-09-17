@@ -102,15 +102,21 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   dead end.
   **`getLiveScaleMode()`** (how the camera frame is cropped into the target 9:16 grid, inside
   `sampleLiveFrame()` — a different "cover" than the screen-fit one above) is `'cover'` (fill +
-  crop) on mobile for both cameras, `'contain'` (full FOV, letterboxed) only on desktop.
-  **Tried making the front/selfie camera `'contain'` too**, to fix 1x looking too tight on a
-  face — reverted: `'contain'` leaves visible letterboxing bars whenever the camera's native
-  aspect doesn't match 9:16, which read as "the canvas shrank / has white margins" instead of
-  filling the screen — a worse regression than the original complaint. Filling the screen
-  edge-to-edge from a portrait target necessarily crops *some* of a wider, landscape-native
-  selfie lens; there's no scale-mode toggle that gives full-bleed fill and zero crop at once.
-  If "too close" on the front camera needs solving, it's a target-aspect-ratio question, not a
-  scale-mode one — don't retry the `facingMode === 'user'` branch without addressing that.
+  crop) on mobile for both cameras, `'contain'` (full FOV, letterboxed) only on desktop. Don't
+  make it `'contain'` for the front camera to fix "too tight" framing — tried that, and it just
+  trades the tightness for visible letterboxing bars (read as "the canvas shrank / has white
+  margins"), which is worse. The right fix for that problem lives one level down, in
+  `getLiveVideoConstraints()`: the front camera used to be asked for the same narrow 9:16
+  `aspectRatio`/`advanced` resolutions as the back camera, but many front-camera drivers
+  satisfy a narrow aspect ratio request by digitally zooming into the sensor's center rather
+  than just slicing off the sides — the hardware itself was pre-zooming before our own "cover"
+  crop ever saw the frame. The front camera now requests only
+  `{ facingMode: 'user', width: { ideal }, height: { ideal } }` with no `aspectRatio` or
+  `advanced` list, letting the sensor return its natural (usually wider) aspect; our existing
+  `'cover'` crop then does all the cropping down to 9:16 from that fuller capture, the same way
+  a real camera app's 1x stays at full native FOV. The back camera keeps requesting the narrow
+  aspect — its much higher native resolution means that crop still keeps plenty of real detail,
+  and it wasn't the one reported as too tight.
   **Capture mode** is one 3-way row (`#mob-capture-mode`: Video / Photo / Upload, each a
   `.mob-mode-label`) that doubles as the app's *only* mode switcher now — tapping "Upload" calls
   `switchToMode('image')`, tapping Video/Photo calls `switchToMode('live')` (if needed) then
@@ -255,7 +261,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v64`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v65`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.
