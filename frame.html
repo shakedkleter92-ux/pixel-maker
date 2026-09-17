@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#111114" />
+    <title>Pixelart Maker</title>
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            background: #111114;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Phone-shaped frame: capped at a large-phone width, aspect-ratio kept
+           so it never grows tall/skinny or short/wide — it just shrinks to fit
+           whatever desktop window it's shown in. On an actual narrow screen the
+           min() collapses to 100vw, filling the screen edge-to-edge. */
+        #pm-frame {
+            position: relative;
+            width: min(420px, 100vw, calc(95dvh * 9 / 19.5));
+            aspect-ratio: 9 / 19.5;
+            overflow: hidden;
+            transform: translateZ(0);
+            background: #fff;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, .08), 0 40px 90px rgba(0, 0, 0, .5);
+        }
+
+        #pm-frame iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="pm-frame">
+        <iframe id="pm-iframe" allow="camera; microphone" title="Pixelart Maker"></iframe>
+    </div>
+    <script>
+        // Forward the original query/hash through to the embedded app, tagged with
+        // pmFrame=1 so index.html knows this IS the embedded instance and renders
+        // itself normally instead of redirecting back here.
+        (function () {
+            var qp = new URLSearchParams(location.search);
+            qp.set('pmFrame', '1');
+            document.getElementById('pm-iframe').src = 'index.html?' + qp.toString() + location.hash;
+        })();
+    </script>
+</body>
+
+</html>

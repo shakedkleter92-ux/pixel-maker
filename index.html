@@ -4,6 +4,21 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Phone-only format: on a wide (desktop/tablet) top-level window, redirect to frame.html,
+         which re-embeds this same page inside a fixed phone-shaped iframe so the app always
+         renders as if on a phone. Real phones (already narrow) and the embedded instance
+         itself (?pmFrame=1) skip this and render normally. -->
+    <script>
+        (function () {
+            try {
+                if (window.self !== window.top) return;
+                var qp = new URLSearchParams(location.search);
+                if (qp.has('pmFrame')) return;
+                if (window.innerWidth <= 700) return;
+                location.replace('frame.html' + location.search + location.hash);
+            } catch (e) { }
+        })();
+    </script>
     <meta name="theme-color" content="#000000" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -41,7 +56,13 @@
             --surface: #e4e4e4;
             --border: #000;
             --text: #000;
-            --muted: #666
+            --muted: #666;
+            /* Floating controls over the canvas (camera buttons, mode header, toggle bar):
+               slightly see-through so what's behind them stays visible. */
+            --fab-bg: rgba(255, 255, 255, 0.82);
+            /* The one deliberate spot of color in an otherwise monochrome UI: the current
+               position on the zoom dial, so it reads instantly like a camera app's zoom. */
+            --zoom-accent: #f5a623
         }
 
         html,
@@ -139,61 +160,18 @@
             gap: 6px
         }
 
+        /* A sec-label sharing a slider's row (e.g. Resolution) acts as that slider's
+           label instead of a stacked heading — no bottom margin, no shrinking/wrapping. */
+        .slider-row>.sec-label {
+            margin-bottom: 0;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
         .sec-num {
             font-size: 8px;
             color: var(--text);
             opacity: .35
-        }
-
-        /* Shape */
-        #shape-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 4px
-        }
-
-        .shape-btn {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 0;
-            padding: 9px 4px;
-            cursor: pointer;
-            text-align: center;
-            font-size: 9px;
-            font-weight: 600;
-            letter-spacing: .07em;
-            text-transform: uppercase;
-            color: var(--muted);
-            font-family: 'IBM Plex Mono', monospace;
-            transition: background .1s, color .1s;
-            line-height: 1.2
-        }
-
-        .shape-btn:hover {
-            background: var(--surface);
-            color: var(--text)
-        }
-
-        .shape-btn.active {
-            background: var(--text);
-            color: var(--bg)
-        }
-
-        #custom-controls {
-            margin-top: 10px;
-            display: none
-        }
-
-        #custom-hint {
-            font-size: 8px;
-            color: var(--muted);
-            line-height: 1.7;
-            margin-bottom: 8px;
-            letter-spacing: .03em
-        }
-
-        #custom-hint strong {
-            color: var(--text)
         }
 
         /* Sliders */
@@ -208,15 +186,6 @@
         /* Keep stacked sliders tight, but add space after button groups */
         .slider-row+.slider-row {
             margin-top: 0;
-        }
-
-        #shape-grid+.slider-row,
-        #draw-palette+.slider-row,
-        .palette-row+.slider-row,
-        #drop-zone+.slider-row,
-        .palette-presets+#upload-zone,
-        #custom-controls+.slider-row {
-            margin-top: 12px;
         }
 
         .slider-row:last-child {
@@ -273,23 +242,6 @@
             flex: 1
         }
 
-        /* Palette swatches (output colors) */
-        .palette-row {
-            margin-top: 8px;
-            padding: 8px;
-            border: 1px solid var(--border);
-            background: var(--bg);
-        }
-
-        .palette-label {
-            font-size: 8px;
-            font-weight: 700;
-            letter-spacing: .2em;
-            text-transform: uppercase;
-            color: var(--muted);
-            margin-bottom: 6px;
-        }
-
         .palette-target {
             display: flex;
             gap: 4px;
@@ -297,24 +249,30 @@
         }
 
         .palette-presets {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
             gap: 4px;
             margin-bottom: 8px;
-            flex-wrap: wrap;
         }
 
+        /* Fixed grid = every preset button is the same size no matter its label's length
+           or how many presets there are; long labels are clipped with an ellipsis instead
+           of stretching their button. */
         .pal-tgt {
-            flex: 1;
-            padding: 6px 6px;
+            padding: 6px 2px;
             border: 1px solid var(--border);
             background: var(--bg);
             font-size: 8px;
             font-weight: 700;
-            letter-spacing: .12em;
+            letter-spacing: .08em;
             text-transform: uppercase;
+            text-align: center;
             cursor: pointer;
             color: var(--muted);
             transition: background .12s, color .12s, transform .12s;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         @media (hover:hover) {
@@ -328,34 +286,6 @@
             background: var(--text);
             color: var(--bg);
         }
-
-        .palette-grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 6px;
-        }
-
-        .pal-swatch {
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            border: 1px solid var(--border);
-            cursor: pointer;
-            padding: 0;
-            background: transparent;
-            transition: transform .12s;
-        }
-
-        .pal-swatch:active {
-            transform: scale(.92);
-        }
-
-        @media (hover:hover) {
-            .pal-swatch:hover {
-                transform: scale(1.08);
-            }
-        }
-
-
 
         input[type=color] {
             width: 30px;
@@ -398,22 +328,32 @@
             color: var(--bg)
         }
 
-        /* Drop zone */
-        #drop-zone,
-        #ref-zone {
-            border: 1px dashed var(--border);
+        /* Upload drop zone: overlays the canvas in #main (Image mode, no photo yet) */
+        #upload-zone {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: var(--bg);
+        }
+
+        #drop-zone {
+            width: 100%;
+            max-width: 320px;
+            border: 2px dashed var(--border);
             border-radius: 0;
-            padding: 11px 10px;
+            padding: 40px 20px;
             text-align: center;
             cursor: pointer;
             position: relative;
             transition: background .15s;
-            margin-bottom: 8px
         }
 
         #drop-zone:hover,
-        #drop-zone.drag-over,
-        #ref-zone:hover {
+        #drop-zone.drag-over {
             background: var(--surface)
         }
 
@@ -427,15 +367,14 @@
         }
 
         .dz-text {
-            font-size: 9px;
+            font-size: 13px;
             color: var(--muted);
-            line-height: 1.5
+            line-height: 1.6
         }
 
-        #file-name,
-        #ref-name {
-            margin-top: 3px;
-            font-size: 9px;
+        #file-name {
+            margin-top: 6px;
+            font-size: 11px;
             font-weight: 600;
             word-break: break-all
         }
@@ -460,16 +399,13 @@
         button,
         .btn,
         .fm-btn,
-        .shape-btn,
         .mob-fm-btn,
         .pal-tgt,
-        .pal-swatch,
         #panel-toggle-bar,
         #mob-shutter,
         #mob-flip,
         #mob-capture-mode,
         #mob-download,
-        #mob-undo,
         #mob-ratio,
         #mob-zoom {
             -webkit-tap-highlight-color: transparent;
@@ -483,26 +419,21 @@
         }
 
         /* Active buttons must invert text color (iOS needs explicit override) */
-        .shape-btn.active,
         .pal-tgt.active,
-        .fm-btn.active,
-        #mob-zoom-ticks button.active {
+        .fm-btn.active {
             color: var(--bg) !important;
             -webkit-text-fill-color: var(--bg) !important;
         }
 
         .btn:active,
         .fm-btn:active,
-        .shape-btn:active,
         .mob-fm-btn:active,
         .pal-tgt:active,
-        .pal-swatch:active,
         #panel-toggle-bar:active,
         #mob-shutter:active,
         #mob-flip:active,
         #mob-capture-mode:active,
         #mob-download:active,
-        #mob-undo:active,
         #mob-ratio:active,
         #mob-zoom:active {
             transform: scale(.97);
@@ -512,16 +443,13 @@
 
             .btn:hover,
             .fm-btn:hover,
-            .shape-btn:hover,
             .mob-fm-btn:hover,
             .pal-tgt:hover,
-            .pal-swatch:hover,
             #panel-toggle-bar:hover,
             #mob-shutter:hover,
             #mob-flip:hover,
             #mob-capture-mode:hover,
             #mob-download:hover,
-            #mob-undo:hover,
             #mob-ratio:hover,
             #mob-zoom:hover {
                 transform: scale(1.02);
@@ -605,7 +533,9 @@
             #panel.panel-open {
                 max-height: 40vh;
                 overflow-y: auto;
-                background: rgba(255, 255, 255, 0.6);
+                /* Always sit above every floating control (mode header, shutter, zoom, etc.) */
+                z-index: 200;
+                background: rgba(255, 255, 255, 0.3);
                 -webkit-backdrop-filter: blur(14px) saturate(140%);
                 backdrop-filter: blur(14px) saturate(140%);
                 isolation: isolate;
@@ -613,27 +543,11 @@
             }
 
             #panel.panel-open .section {
-                background: rgba(255, 255, 255, 0.35);
+                background: rgba(255, 255, 255, 0.18);
             }
 
-            /* When panel open – keep canvas visible above it */
-            body.panel-open #main {
-                position: fixed !important;
-                top: 48px !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: calc(68px + var(--panel-open-h, 40vh)) !important;
-                z-index: 0;
-                height: auto;
-            }
-
-            body.panel-open #grid-canvas {
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-            }
+            /* Canvas stays full-size and fixed; the panel is a translucent overlay
+               that slides up over it, not a layout that pushes/shrinks it. */
 
             /* Show toggle bar */
             #panel-toggle-bar {
@@ -710,34 +624,7 @@
             z-index: 1;
         }
 
-        #shape-editor {
-            display: none;
-            position: relative;
-            z-index: 1;
-            cursor: crosshair;
-            border: 1px solid var(--border);
-            border-radius: 0;
-            background: #fff
-        }
-
-        #editor-status {
-            position: absolute;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--text);
-            color: var(--bg);
-            font-size: 9px;
-            font-family: 'IBM Plex Mono', monospace;
-            letter-spacing: .08em;
-            text-transform: uppercase;
-            padding: 5px 12px;
-            pointer-events: none;
-            z-index: 10;
-            white-space: nowrap
-        }
-
-        /* ───── Mobile top header (mode: Draw / Image / Live) ───── */
+        /* ───── Mobile top header (mode: Upload / Live) ───── */
         #mob-mode-header {
             display: none;
             position: fixed;
@@ -746,7 +633,7 @@
             right: 0;
             height: 48px;
             z-index: 120;
-            background: var(--panel);
+            background: var(--fab-bg);
             border: 1px solid var(--border);
             flex-direction: row;
             align-items: stretch;
@@ -757,7 +644,7 @@
             border: none;
             border-right: 1px solid var(--border);
             border-radius: 0;
-            background: var(--bg);
+            background: var(--fab-bg);
             font-size: 10px;
             font-weight: 700;
             letter-spacing: .14em;
@@ -820,7 +707,7 @@
             left: 0;
             right: 0;
             height: 68px;
-            background: var(--bg);
+            background: var(--fab-bg);
             border-top: 1px solid var(--border);
             border-radius: 0;
             z-index: 110;
@@ -901,7 +788,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.25);
         }
 
         #export-preview-canvas {
@@ -1015,8 +902,10 @@
             #panel.panel-open {
                 max-height: 40vh;
                 overflow-y: auto;
+                /* Always sit above every floating control (mode header, shutter, zoom, etc.) */
+                z-index: 200;
                 /* Frosted glass panel (readable over Live) */
-                background: rgba(255, 255, 255, 0.6);
+                background: rgba(255, 255, 255, 0.3);
                 -webkit-backdrop-filter: blur(14px) saturate(140%);
                 backdrop-filter: blur(14px) saturate(140%);
                 isolation: isolate;
@@ -1032,7 +921,6 @@
                 color: var(--text);
             }
 
-            #panel.panel-open .shape-btn:not(.active),
             #panel.panel-open .mob-fm-btn:not(.active) {
                 color: var(--text);
             }
@@ -1056,28 +944,11 @@
             }
 
             #panel.panel-open .section {
-                background: rgba(255, 255, 255, 0.35);
+                background: rgba(255, 255, 255, 0.18);
             }
 
-            /* כשהפאנל פתוח – הקנבס נצמד ל-header (Draw / Image / Live), אזור הקנבס רק מעל הפאנל */
-            body.panel-open #main {
-                position: fixed !important;
-                top: 48px !important;
-                left: 0 !important;
-                right: 0 !important;
-                /* Use actual panel height to avoid large empty gap */
-                bottom: calc(68px + var(--panel-open-h, 40vh)) !important;
-                z-index: 0;
-                height: auto;
-            }
-
-            body.panel-open #grid-canvas {
-                position: absolute !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-            }
+            /* הקנבס נשאר קבוע במקום ובגודל שלו; הפאנל הוא overlay שקוף-למחצה
+               שעולה מעליו ויורד, ולא שינוי פריסה שדוחף/מקטין אותו. */
 
             /* Show toggle bar */
             #panel-toggle-bar {
@@ -1110,16 +981,6 @@
             .sec-label {
                 font-size: 11px;
                 margin-bottom: 10px
-            }
-
-            #shape-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 6px
-            }
-
-            .shape-btn {
-                padding: 12px 4px;
-                font-size: 11px
             }
 
             .sl-label {
@@ -1157,7 +1018,7 @@
                 font-size: 11px
             }
 
-            /* במובייל: כפתורי Draw/Image/Live רק ב-header העליון, לא בתפריט */
+            /* במובייל: כפתורי Upload/Live רק ב-header העליון, לא בתפריט */
             .fill-mode-switcher {
                 display: none
             }
@@ -1196,14 +1057,13 @@
         #mob-flip,
         #mob-capture-mode,
         #mob-download,
-        #mob-undo,
         #mob-ratio {
             display: none;
             position: fixed;
             border-radius: 0;
             cursor: pointer;
             border: 1px solid var(--border);
-            background: var(--bg);
+            background: var(--fab-bg);
             box-shadow: 0 3px 12px rgba(0, 0, 0, .2);
             transition: background .12s, transform .12s;
             z-index: 85
@@ -1213,7 +1073,6 @@
         #mob-flip:active,
         #mob-capture-mode:active,
         #mob-download:active,
-        #mob-undo:active,
         #mob-ratio:active {
             transform: scale(.97)
         }
@@ -1284,7 +1143,7 @@
             border-radius: 0;
             cursor: pointer;
             border: 1px solid var(--border);
-            background: var(--bg);
+            background: var(--fab-bg);
             font-size: 9px;
             font-weight: 700;
             letter-spacing: .05em;
@@ -1309,7 +1168,7 @@
             }
         }
 
-        /* Download — bottom-left (Draw/Upload; Live uses preview modal) */
+        /* Download — bottom-left (Upload; Live uses preview modal) */
         #mob-download {
             width: 44px;
             height: 44px;
@@ -1328,41 +1187,21 @@
             color: var(--border)
         }
 
-        /* Undo — small, bottom-right */
-        #mob-undo {
-            width: 44px;
-            height: 44px;
-            bottom: 86px;
-            right: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            /* Must stay above the sliding panel when it's open */
-            z-index: 130
-        }
-
-        #mob-undo svg {
-            width: 22px;
-            height: 22px;
-            display: block;
-        }
-
-        /* Live zoom FAB — bottom-right (Live only) */
+        /* Live zoom FAB — bottom-right (Live only). Tapping it opens a horizontal
+           drag-to-zoom wheel above it, like the zoom dial in a phone's camera app. */
         #mob-zoom {
             position: fixed;
-            width: 44px;
+            width: 54px;
             height: 44px;
             bottom: 86px;
             right: 20px;
-            border-radius: 0;
+            border-radius: 22px;
             cursor: pointer;
             border: 1px solid var(--border);
-            background: var(--bg);
-            font-size: 10px;
+            background: var(--fab-bg);
+            font-size: 11px;
             font-weight: 800;
-            letter-spacing: .03em;
-            text-transform: uppercase;
+            letter-spacing: .02em;
             font-family: 'IBM Plex Mono', monospace;
             color: var(--text);
             -webkit-text-fill-color: var(--text);
@@ -1370,67 +1209,46 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 3px;
             padding: 0;
             -webkit-appearance: none;
             appearance: none;
+        }
+
+        #mob-zoom-icon {
+            font-size: 13px;
+            line-height: 1;
         }
 
         #mob-zoom-pop {
             position: fixed;
-            right: 20px;
-            bottom: 136px;
-            width: 44px;
+            right: 0;
+            bottom: 138px;
+            width: 240px;
+            height: 172px;
             padding: 0;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            border: none;
+            background: transparent;
             z-index: 141;
         }
 
-        #mob-zoom-ticks {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-        }
-
-        #mob-zoom-ticks button {
-            width: 44px;
-            height: 44px;
-            padding: 0;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: .08em;
-            text-transform: uppercase;
+        /* Curved zoom dial: a ruler bent along an arc, dragged directly (no native
+           slider) — deliberately different from the app's square controls elsewhere,
+           so it clearly reads as a camera-style zoom wheel. */
+        #mob-zoom-dial {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
             cursor: pointer;
-            color: var(--text);
-            -webkit-text-fill-color: var(--text);
-            -webkit-appearance: none;
-            appearance: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        #mob-zoom-ticks button.active {
-            background: var(--text);
-            color: var(--bg);
-            -webkit-text-fill-color: var(--bg);
-        }
-
-        /* Desktop: show floating undo outside panel (Draw) */
-        @media (min-width: 1025px) {
-            #mob-undo {
-                display: none;
-            }
-
-            body.show-desktop-undo #mob-undo {
-                display: flex;
-                position: fixed;
-                right: 20px;
-                bottom: 20px;
-                z-index: 120;
-            }
+        #mob-zoom-dial-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 20px;
+            font-weight: 800;
+            fill: var(--zoom-accent);
         }
 
         /* Aspect ratio — top-right, Live only (on mobile below mode header) */
@@ -1538,11 +1356,10 @@
             style="display:none; font-size:11px; margin-top:10px; color:var(--text); font-weight:600;"></p>
         <button type="button" class="skip-btn" id="install-prompt-skip">Continue to app</button>
     </div>
-    <!-- Mobile top header: mode switch (DRAW / IMAGE / LIVE) -->
+    <!-- Mobile top header: mode switch (IMAGE / LIVE) -->
     <div id="mob-mode-header" aria-label="Modes">
-        <button type="button" class="mob-fm-btn active" id="mob-fm-draw"><span>Draw</span></button>
         <button type="button" class="mob-fm-btn" id="mob-fm-image"><span>Upload</span></button>
-        <button type="button" class="mob-fm-btn" id="mob-fm-live"><span>Live</span></button>
+        <button type="button" class="mob-fm-btn active" id="mob-fm-live"><span>Live</span></button>
     </div>
     <!-- Mobile bottom bar -->
     <div id="panel-toggle-bar">
@@ -1567,20 +1384,18 @@
     <!-- Download: small circle bottom-left -->
     <button id="mob-capture-mode" aria-label="Capture mode" type="button">image</button>
     <button id="mob-download" aria-label="Download"></button>
-    <!-- Live Zoom: small button bottom-right (Live only) -->
-    <button id="mob-zoom" aria-label="Zoom" type="button" style="display:none">1×</button>
-    <div id="mob-zoom-pop" aria-hidden="true" style="display:none">
-        <div id="mob-zoom-ticks"></div>
-    </div>
-
-    <!-- Undo: small circle bottom-right (Draw/Image) -->
-    <button id="mob-undo" aria-label="Undo" type="button" style="display:none">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="square" aria-hidden="true">
-            <path d="M9 14l-4-4 4-4" />
-            <path d="M5 10h7a7 7 0 1 1 0 14h-2" />
-        </svg>
+    <!-- Live Zoom: small button bottom-right (Live only) — opens a curved drag-to-zoom
+         dial, like a phone camera's zoom ruler. -->
+    <button id="mob-zoom" aria-label="Zoom" type="button" style="display:none">
+        <span id="mob-zoom-icon" aria-hidden="true">⊙</span><span id="mob-zoom-val">1×</span>
     </button>
+    <div id="mob-zoom-pop" aria-hidden="true" style="display:none">
+        <svg id="mob-zoom-dial" viewBox="0 0 240 172" width="240" height="172" role="slider"
+            aria-label="Zoom level" aria-valuemin="1" aria-valuemax="2" aria-valuenow="1">
+            <g id="mob-zoom-ticks-g"></g>
+            <text id="mob-zoom-dial-label" x="120" y="150" text-anchor="middle">1×</text>
+        </svg>
+    </div>
 
     <div id="app">
         <aside id="panel">
@@ -1591,107 +1406,40 @@
             <!-- Mode switch (desktop): keep first in panel -->
             <div class="section desktop-mode-switch">
                 <div id="fill-mode" style="display:flex">
-                    <button class="fm-btn active" id="fm-draw" style="flex:1">Draw</button>
                     <button class="fm-btn" id="fm-image" style="flex:1">Upload</button>
-                    <button class="fm-btn" id="fm-live" style="flex:1">Live</button>
+                    <button class="fm-btn active" id="fm-live" style="flex:1">Live</button>
                 </div>
             </div>
 
-            <!-- 01 Shape -->
+            <!-- 01 Resolution -->
             <div class="section">
-                <div class="sec-label"><span class="sec-num">01</span> Cell Shape</div>
-                <div id="shape-grid" style="grid-template-columns:repeat(2,1fr)">
-                    <button class="shape-btn active" data-shape="square">Square</button>
-                    <button class="shape-btn" data-shape="custom" id="btn-custom">Custom Shape</button>
-                </div>
                 <div class="slider-row">
-                    <span class="sl-label">Rotation</span>
-                    <input type="range" id="d-rotation" min="0" max="359" value="0" />
-                    <span class="sl-val" id="d-rotation-v">0°</span>
-                </div>
-                <div class="slider-row">
-                    <span class="sl-label">Resolution</span>
-                    <input type="range" id="g-res" min="8" max="200" value="100" />
-                    <span class="sl-val" id="g-res-v">100</span>
-                </div>
-                <div id="custom-controls">
-                    <div id="custom-hint">
-                        <strong>Click</strong> to place points<br />
-                        <strong>Click first point</strong> or Enter to close<br />
-                        <strong>Backspace</strong> to remove last point
-                    </div>
-                    <button class="btn btn-outline" id="btn-clear-shape">Clear Points</button>
-                    <button class="btn btn-fill" id="btn-confirm-shape" disabled>Confirm Shape</button>
+                    <span class="sec-label"><span class="sec-num">01</span> Resolution</span>
+                    <input type="range" id="g-res" min="8" max="300" value="250" />
+                    <span class="sl-val" id="g-res-v">250</span>
                 </div>
             </div>
 
-            <!-- 02 Grid -->
-            <div class="section" id="grid-section">
-                <div class="sec-label"><span class="sec-num">02</span> Grid</div>
-                <div class="slider-row"><span class="sl-label">Columns</span><input type="range" id="d-cols" min="2"
-                        max="200" value="20" /><span class="sl-val" id="d-cols-v">20</span></div>
-                <div class="slider-row"><span class="sl-label">Rows</span><input type="range" id="d-rows" min="2"
-                        max="200" value="20" /><span class="sl-val" id="d-rows-v">20</span></div>
-                <div class="slider-row"><span class="sl-label">Gap</span><input type="range" id="d-gap" min="0" max="20"
-                        value="0" /><span class="sl-val" id="d-gap-v">0</span></div>
-            </div>
-
-            <!-- 03 Palette -->
+            <!-- 02 Palette -->
             <div class="section" id="palette-section">
-                <div class="sec-label"><span class="sec-num">03</span> Palette</div>
+                <div class="sec-label"><span class="sec-num">02</span> Palette</div>
                 <div class="palette-presets" id="palette-presets">
                     <button type="button" class="pal-tgt" data-preset="moldy_orange_7">Moldy</button>
-                    <button type="button" class="pal-tgt" data-preset="oil_6">Oil</button>
-                    <button type="button" class="pal-tgt" data-preset="midnight_ablaze">Midnight</button>
-                    <button type="button" class="pal-tgt active" data-preset="slso8">SLSO8</button>
-                    <button type="button" class="pal-tgt" data-preset="rust_gold_8">RustGold</button>
-                    <button type="button" class="pal-tgt" data-preset="blessing">Blessing</button>
-                </div>
-                <!-- Upload (Image mode): only upload control lives under Palette -->
-                <div id="upload-zone" style="display:none; margin-top:10px">
-                    <div id="drop-zone">
-                        <input type="file" id="file-input" accept="image/*" class="dz-input" />
-                        <div class="dz-text">Drop image here<br />or click to browse</div>
-                        <div id="file-name"></div>
-                    </div>
+                    <button type="button" class="pal-tgt" data-preset="slso8">SLSO8</button>
+                    <button type="button" class="pal-tgt" data-preset="chasm">Chasm</button>
+                    <button type="button" class="pal-tgt" data-preset="citrink">Citrink</button>
+                    <button type="button" class="pal-tgt" data-preset="eulbink">Eulbink</button>
+                    <button type="button" class="pal-tgt" data-preset="gothic_bit">Gothic</button>
+                    <button type="button" class="pal-tgt active" data-preset="pollen8">Pollen8</button>
+                    <button type="button" class="pal-tgt" data-preset="pspixel">PSPixel</button>
+                    <button type="button" class="pal-tgt" data-preset="vanilla_milkshake">Vanilla</button>
+                    <button type="button" class="pal-tgt" data-preset="p31">31</button>
                 </div>
             </div>
 
-            <!-- 04 Fill -->
-            <div class="section" id="fill-section">
-                <!-- Draw options -->
-                <div id="draw-options">
-                    <div class="palette-row">
-                        <div class="palette-label">Pick color</div>
-                        <div class="palette-grid" id="draw-palette"></div>
-                    </div>
-                    <div class="slider-row"><span class="sl-label">Brush</span><input type="range" id="d-brush" min="1"
-                            max="5" value="1" /><span class="sl-val" id="d-brush-v">1</span></div>
-                    <!-- Reference image -->
-                    <div
-                        style="margin-top:8px;font-size:8px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">
-                        Reference</div>
-                    <div id="ref-zone">
-                        <input type="file" id="ref-input" accept="image/*" class="dz-input" />
-                        <div class="dz-text">Drop reference image<br />or click to browse</div>
-                        <div id="ref-name"></div>
-                    </div>
-                    <div class="slider-row"><span class="sl-label">Opacity</span><input type="range" id="ref-opacity"
-                            min="5" max="80" value="30" /><span class="sl-val" id="ref-opacity-v">30%</span></div>
-                    <button class="btn btn-outline" id="btn-clear-ref" style="margin-top:4px">Clear Reference</button>
-
-                </div>
-
-                <!-- Image options -->
-                <div id="image-options" style="display:none"></div>
-
-                <!-- Live Camera options (minimal) -->
-                <div id="live-options" style="display:none"></div>
-            </div>
-
-            <!-- 05 Export -->
+            <!-- 03 Export -->
             <div class="section">
-                <div class="sec-label"><span class="sec-num">05</span> Export</div>
+                <div class="sec-label"><span class="sec-num">03</span> Export</div>
                 <button class="btn btn-fill" id="dl-pixels">Download</button>
                 <button class="btn btn-outline" id="btn-clear">Clear All</button>
             </div>
@@ -1699,8 +1447,14 @@
 
         <main id="main">
             <canvas id="grid-canvas"></canvas>
-            <canvas id="shape-editor"></canvas>
-            <div id="editor-status" style="display:none">Place points — click first point or Enter to close</div>
+            <!-- Upload (Image mode): tap/drop anywhere on the canvas to choose a photo -->
+            <div id="upload-zone" style="display:none">
+                <div id="drop-zone">
+                    <input type="file" id="file-input" accept="image/*" class="dz-input" />
+                    <div class="dz-text">Drop image here<br />or click to browse</div>
+                    <div id="file-name"></div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -1741,39 +1495,9 @@
         // ═══════════════════════════════════════════════════
         //  SHAPE PATH HELPER
         // ═══════════════════════════════════════════════════
-        function tracePath(ctx, cx, cy, rx, ry, shape, customPts) {
+        function tracePath(ctx, cx, cy, rx, ry) {
             ctx.beginPath();
-            switch (shape) {
-                case 'square': ctx.rect(cx - rx, cy - ry, rx * 2, ry * 2); break;
-                case 'circle': { const r = Math.min(rx, ry); ctx.arc(cx, cy, r, 0, Math.PI * 2); break; }
-                case 'diamond': ctx.moveTo(cx, cy - ry); ctx.lineTo(cx + rx, cy); ctx.lineTo(cx, cy + ry); ctx.lineTo(cx - rx, cy); ctx.closePath(); break;
-                case 'triangle': ctx.moveTo(cx, cy - ry); ctx.lineTo(cx + rx, cy + ry); ctx.lineTo(cx - rx, cy + ry); ctx.closePath(); break;
-                case 'hexagon': { const r = Math.min(rx, ry); for (let i = 0; i < 6; i++) { const a = (Math.PI / 180) * (60 * i - 30); ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a)); } ctx.closePath(); break; }
-                case 'cross': { const tx = rx * .36, ty = ry * .36; ctx.moveTo(cx - tx, cy - ry); ctx.lineTo(cx + tx, cy - ry); ctx.lineTo(cx + tx, cy - ty); ctx.lineTo(cx + rx, cy - ty); ctx.lineTo(cx + rx, cy + ty); ctx.lineTo(cx + tx, cy + ty); ctx.lineTo(cx + tx, cy + ry); ctx.lineTo(cx - tx, cy + ry); ctx.lineTo(cx - tx, cy + ty); ctx.lineTo(cx - rx, cy + ty); ctx.lineTo(cx - rx, cy - ty); ctx.lineTo(cx - tx, cy - ty); ctx.closePath(); break; }
-                case 'rounded-sq': ctx.roundRect(cx - rx, cy - ry, rx * 2, ry * 2, Math.min(rx, ry) * 0.35); break;
-                case 'pill': { const r = Math.min(rx, ry); const pw = r * 0.52; ctx.arc(cx, cy - r + pw, pw, Math.PI, 0); ctx.arc(cx, cy + r - pw, pw, 0, Math.PI); ctx.closePath(); break; }
-                case 'ellipse': ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); break;
-                case 'custom':
-                    if (customPts && customPts.length >= 3) {
-                        ctx.moveTo(cx + customPts[0].x * rx, cy + customPts[0].y * ry);
-                        for (let i = 1; i < customPts.length; i++) {
-                            const prev = customPts[i - 1], curr = customPts[i];
-                            const cp1x = prev.cpOut ? cx + prev.cpOut.x * rx : cx + prev.x * rx;
-                            const cp1y = prev.cpOut ? cy + prev.cpOut.y * ry : cy + prev.y * ry;
-                            const cp2x = curr.cpIn ? cx + curr.cpIn.x * rx : cx + curr.x * rx;
-                            const cp2y = curr.cpIn ? cy + curr.cpIn.y * ry : cy + curr.y * ry;
-                            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, cx + curr.x * rx, cy + curr.y * ry);
-                        }
-                        const _last = customPts[customPts.length - 1], _first = customPts[0];
-                        const cl1x = _last.cpOut ? cx + _last.cpOut.x * rx : cx + _last.x * rx;
-                        const cl1y = _last.cpOut ? cy + _last.cpOut.y * ry : cy + _last.y * ry;
-                        const cl2x = _first.cpIn ? cx + _first.cpIn.x * rx : cx + _first.x * rx;
-                        const cl2y = _first.cpIn ? cy + _first.cpIn.y * ry : cy + _first.y * ry;
-                        ctx.bezierCurveTo(cl1x, cl1y, cl2x, cl2y, cx + _first.x * rx, cy + _first.y * ry);
-                        ctx.closePath();
-                    }
-                    break;
-            }
+            ctx.rect(cx - rx, cy - ry, rx * 2, ry * 2);
         }
 
         function hexToRgba(hex, a) { const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${a})`; }
@@ -1782,40 +1506,25 @@
         //  STATE  — cells[r][c] = string color | null (empty)
         // ═══════════════════════════════════════════════════
         const state = {
-            shape: 'square', cols: 20, rows: 20, gap: 0, strokeW: 0.5,
+            cols: 20, rows: 20, gap: 0, strokeW: 0.5,
             bg: '#ffffff', strokeCol: '#000000', fillCol: '#000000',
-            brushSize: 1, rotation: 0,
-            cells: [], hoverR: -1, hoverC: -1,
-            painting: false, erasing: false,
-            mode: 'draw',
+            cells: [],
+            mode: 'live',
             // image mode
-            srcImage: null, imgRes: 100, imgBg: '#ffffff', imgStrokeCol: '#000000', imgFillCol: '#000000',
+            srcImage: null, imgRes: 250, imgBg: '#ffffff', imgStrokeCol: '#000000', imgFillCol: '#000000',
             imgThreshold: 128, imgBgCut: 220, imgFillCol2: '#ffffff', imgEdge: 0,
             useImageColors: true,
             imageManualGrid: false,
             gapBeforeLive: null,
-            // reference image (draw mode)
-            refImage: null, refOpacity: 0.3,
-            // custom shape
-            customPts: [], editorMode: false,
             hideGrid: false,
             captureMode: 'image',
             exportRatio: null,
         };
 
-        const UNDO_LIMIT = 50;
-        let undoStack = [];
-
         function resetCells() {
             state.cells = Array.from({ length: state.rows }, () => new Array(state.cols).fill(null));
-            undoStack = [];
         }
         resetCells();
-
-        function pushUndo() {
-            undoStack.push(state.cells.map(r => r.slice()));
-            if (undoStack.length > UNDO_LIMIT) undoStack.shift();
-        }
 
         // ═══════════════════════════════════════════════════
         //  GRID CANVAS
@@ -1864,37 +1573,19 @@
             const { cw, ch, ox, oy } = cellLayout(W, H);
             const gap = state.gap;
             ctx.fillStyle = state.bg; ctx.fillRect(0, 0, W, H);
-            if (state.refImage && state.mode === 'draw') {
-                ctx.globalAlpha = state.refOpacity;
-                ctx.drawImage(state.refImage, 0, 0, W, H);
-                ctx.globalAlpha = 1;
-            }
             // When Gap=0 the user expects cells to touch (no internal padding).
-            // Live always uses full cells; Draw/Image use full cells only when Gap=0.
+            // Live always uses full cells; Image uses full cells only when Gap=0.
             const pad = (state.mode === 'live' || state.gap === 0) ? 1 : 0.92;
             const rx0 = cw / 2 * pad, ry0 = ch / 2 * pad;
-            const rotRad = state.rotation * Math.PI / 180;
             for (let row = 0; row < state.rows; row++) {
                 for (let col = 0; col < state.cols; col++) {
                     const cx = ox + col * (cw + gap) + cw / 2;
                     const cy = oy + row * (ch + gap) + ch / 2;
                     const cellColor = state.cells[row][col];
-                    const hovered = (row === state.hoverR && col === state.hoverC && state.mode === 'draw');
-                    if (state.shape === 'custom' && state.customPts.length < 3) continue;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.rotate(rotRad);
-                    ctx.translate(-cx, -cy);
-                    tracePath(ctx, cx, cy, rx0, ry0, state.shape, state.customPts);
+                    tracePath(ctx, cx, cy, rx0, ry0);
                     if (cellColor !== null) {
                         ctx.fillStyle = cellColor; ctx.fill();
-                    } else if (hovered) {
-                        ctx.fillStyle = 'rgba(0,0,0,0.08)'; ctx.fill();
                     }
-                    if (state.mode === 'draw' && !state.hideGrid) {
-                        ctx.strokeStyle = state.strokeCol; ctx.lineWidth = state.strokeW; ctx.stroke();
-                    }
-                    ctx.restore();
                 }
             }
         }
@@ -1955,7 +1646,9 @@
 
             if (isLive) {
                 // Live preview: always render into the TARGET ratio frame (single source of truth),
-                // fitted inside #main. Camera pixels are still "contain" inside the grid (no crop).
+                // then COVER-fit it into #main — fill the screen completely, cropping any excess,
+                // so there's never a white margin. (Camera pixels are still "contain" inside the
+                // grid itself, i.e. the full camera frame is visible with no crop there.)
                 var frameW = Math.max(1, W);
                 var frameH = Math.max(1, H);
                 var dx = 0, dy = 0;
@@ -1963,11 +1656,11 @@
                 if (desiredAR > 1) desiredAR = 1 / desiredAR;
                 var screenAR = frameW / frameH;
                 if (screenAR > desiredAR) {
-                    frameW = Math.max(1, Math.round(frameH * desiredAR));
-                    dx = Math.round((W - frameW) / 2);
-                } else {
                     frameH = Math.max(1, Math.round(frameW / desiredAR));
                     dy = Math.round((H - frameH) / 2);
+                } else {
+                    frameW = Math.max(1, Math.round(frameH * desiredAR));
+                    dx = Math.round((W - frameW) / 2);
                 }
 
                 var cw = frameW;
@@ -1997,53 +1690,6 @@
             drawGridToContext(gctx, W, H);
         }
 
-        // ── Mouse (grid) ───────────────────────────────────
-        function hitCell(e) {
-            const rect = gridCanvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-            const { cw, ch, ox, oy } = cellLayout(gridCanvas.width, gridCanvas.height);
-            const gap = state.gap;
-            const lx = mx - ox, ly = my - oy;
-            const col = Math.floor(lx / (cw + gap)), row = Math.floor(ly / (ch + gap));
-            if (row < 0 || row >= state.rows || col < 0 || col >= state.cols) return null;
-            if ((lx - col * (cw + gap)) > cw || (ly - row * (ch + gap)) > ch) return null;
-            return { row, col };
-        }
-
-        function paintBrush(rc) {
-            const b = Math.floor(state.brushSize / 2);
-            for (let dr = -b; dr <= b; dr++) {
-                for (let dc = -b; dc <= b; dc++) {
-                    const r2 = rc.row + dr, c2 = rc.col + dc;
-                    if (r2 >= 0 && r2 < state.rows && c2 >= 0 && c2 < state.cols)
-                        state.cells[r2][c2] = state.erasing ? null : state.fillCol;
-                }
-            }
-        }
-
-        gridCanvas.addEventListener('contextmenu', e => e.preventDefault());
-        gridCanvas.addEventListener('mousemove', e => {
-            if (state.mode !== 'draw') return;
-            const rc = hitCell(e), nr = rc?.row ?? -1, nc = rc?.col ?? -1;
-            if (nr !== state.hoverR || nc !== state.hoverC) {
-                state.hoverR = nr; state.hoverC = nc;
-                if (state.painting && rc) paintBrush(rc);
-                renderGrid();
-            }
-        });
-        gridCanvas.addEventListener('mouseleave', () => { state.hoverR = -1; state.hoverC = -1; state.painting = false; renderGrid(); });
-        gridCanvas.addEventListener('mousedown', e => {
-            if (state.mode !== 'draw') return;
-            e.preventDefault();
-            const rc = hitCell(e); if (!rc) return;
-            pushUndo();
-            state.erasing = (e.button === 2); // right click = erase
-            paintBrush(rc); state.painting = true; renderGrid();
-        });
-        window.addEventListener('mouseup', () => {
-            state.painting = false;
-            if (editorDragging) { editorDragging = null; editorCanvas.style.cursor = 'crosshair'; if (state.editorMode) renderEditor(); }
-        });
         window.addEventListener('resize', () => {
             // On breakpoint changes, normalize panel state so canvas doesn't "jump"
             try {
@@ -2079,288 +1725,8 @@
                     }
                 }
             } catch (_) { }
-            if (!state.editorMode) renderGrid(); else renderEditor();
+            renderGrid();
             if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
-            updateDesktopUndoFab();
-        });
-
-        // ── Keyboard shortcuts ─────────────────────────────
-        document.addEventListener('keydown', e => {
-            // Undo
-            if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !state.editorMode) {
-                e.preventDefault();
-                if (undoStack.length > 0) { state.cells = undoStack.pop(); renderGrid(); }
-                return;
-            }
-            if (!state.editorMode) return;
-            if (e.key === 'Enter' && editorPts.length >= 3 && !shapeClosed) closeAndConfirmReady();
-            if (e.key === 'Backspace' && !shapeClosed) { editorPts.pop(); renderEditor(); }
-            if (e.key === 'Escape') exitEditorMode();
-        });
-
-        // Undo buttons (Draw)
-        function doUndo() {
-            if (undoStack.length > 0) {
-                state.cells = undoStack.pop();
-                renderGrid();
-            }
-        }
-        const mobUndo = document.getElementById('mob-undo');
-        if (mobUndo) mobUndo.addEventListener('click', doUndo);
-
-        // ═══════════════════════════════════════════════════
-        //  SHAPE EDITOR
-        // ═══════════════════════════════════════════════════
-        const editorCanvas = document.getElementById('shape-editor');
-        const ectx = editorCanvas.getContext('2d');
-        let editorPts = [], editorMouse = null, shapeClosed = false;
-        let editorDragStart = null, editorIsDragging = false, editorPendingHandle = null;
-        let editorDragging = null; // {type:'anchor'|'cpIn'|'cpOut', ptIndex:number}
-        const CLOSE_RADIUS = 12;
-        const DRAG_THRESHOLD = 5;
-        const EDIT_HIT = 10;
-
-        function distPt(a, b) { const dx = a.x - b.x, dy = a.y - b.y; return Math.sqrt(dx * dx + dy * dy); }
-        function hitTestEditor(pos) {
-            for (let i = 0; i < editorPts.length; i++) {
-                const p = editorPts[i];
-                if (p.cpIn && distPt(pos, p.cpIn) < EDIT_HIT) return { type: 'cpIn', ptIndex: i };
-                if (p.cpOut && distPt(pos, p.cpOut) < EDIT_HIT) return { type: 'cpOut', ptIndex: i };
-            }
-            for (let i = 0; i < editorPts.length; i++) {
-                if (distPt(pos, editorPts[i]) < EDIT_HIT) return { type: 'anchor', ptIndex: i };
-            }
-            return null;
-        }
-
-        function drawEditorBezier(pts, closed) {
-            if (!pts.length) return;
-            ectx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) {
-                const prev = pts[i - 1], curr = pts[i];
-                const cp1 = prev.cpOut || prev, cp2 = curr.cpIn || curr;
-                ectx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, curr.x, curr.y);
-            }
-            if (closed && pts.length >= 2) {
-                const last = pts[pts.length - 1];
-                const cp1 = last.cpOut || last, cp2 = pts[0].cpIn || pts[0];
-                ectx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, pts[0].x, pts[0].y);
-            }
-        }
-
-        function setEditorSize() {
-            const m = document.getElementById('main');
-            const sz = Math.min(m.clientWidth - 60, m.clientHeight - 60, 420);
-            editorCanvas.width = sz; editorCanvas.height = sz;
-        }
-
-        function renderEditor() {
-            setEditorSize();
-            const sz = editorCanvas.width;
-            ectx.clearRect(0, 0, sz, sz);
-            ectx.fillStyle = '#fff'; ectx.fillRect(0, 0, sz, sz);
-            ectx.strokeStyle = '#e0e0e0'; ectx.lineWidth = .5;
-            const step = sz / 8;
-            for (let i = 1; i < 8; i++) {
-                ectx.beginPath(); ectx.moveTo(i * step, 0); ectx.lineTo(i * step, sz); ectx.stroke();
-                ectx.beginPath(); ectx.moveTo(0, i * step); ectx.lineTo(sz, i * step); ectx.stroke();
-            }
-            ectx.strokeStyle = '#ccc'; ectx.lineWidth = 1; ectx.strokeRect(0, 0, sz, sz);
-
-            const pendingPt = editorDragStart ? {
-                x: editorDragStart.x, y: editorDragStart.y,
-                cpIn: editorPendingHandle ? editorPendingHandle.cpIn : null,
-                cpOut: editorPendingHandle ? editorPendingHandle.cpOut : null
-            } : null;
-            const allPts = pendingPt ? [...editorPts, pendingPt] : editorPts;
-            if (!allPts.length) return;
-
-            // Closed filled shape
-            if (shapeClosed && editorPts.length >= 3) {
-                ectx.beginPath(); drawEditorBezier(editorPts, true);
-                ectx.fillStyle = 'rgba(0,0,0,.08)'; ectx.fill();
-                ectx.strokeStyle = '#000'; ectx.lineWidth = 1.5; ectx.stroke();
-            }
-            // Open bezier path
-            if (!shapeClosed && allPts.length > 1) {
-                ectx.beginPath(); drawEditorBezier(allPts, false);
-                ectx.strokeStyle = '#000'; ectx.lineWidth = 1.5; ectx.stroke();
-            }
-            // Dashed preview to mouse
-            if (!shapeClosed && editorMouse && !editorDragStart && editorPts.length > 0) {
-                const lastPt = editorPts[editorPts.length - 1];
-                const cp1 = lastPt.cpOut || lastPt;
-                ectx.strokeStyle = '#999'; ectx.lineWidth = 1; ectx.setLineDash([4, 4]);
-                ectx.beginPath();
-                ectx.moveTo(lastPt.x, lastPt.y);
-                ectx.bezierCurveTo(cp1.x, cp1.y, editorMouse.x, editorMouse.y, editorMouse.x, editorMouse.y);
-                ectx.stroke(); ectx.setLineDash([]);
-            }
-            // Handle lines & dots for placed points
-            editorPts.forEach(p => {
-                [p.cpIn, p.cpOut].forEach(cp => {
-                    if (!cp) return;
-                    ectx.strokeStyle = '#0066ff'; ectx.lineWidth = 1;
-                    ectx.beginPath(); ectx.moveTo(p.x, p.y); ectx.lineTo(cp.x, cp.y); ectx.stroke();
-                    ectx.beginPath(); ectx.arc(cp.x, cp.y, 3.5, 0, Math.PI * 2);
-                    ectx.fillStyle = '#0066ff'; ectx.fill();
-                });
-            });
-            // Handle preview while dragging
-            if (pendingPt) {
-                [pendingPt.cpIn, pendingPt.cpOut].forEach(cp => {
-                    if (!cp) return;
-                    ectx.strokeStyle = '#0066ff'; ectx.lineWidth = 1;
-                    ectx.beginPath(); ectx.moveTo(pendingPt.x, pendingPt.y); ectx.lineTo(cp.x, cp.y); ectx.stroke();
-                    ectx.beginPath(); ectx.arc(cp.x, cp.y, 3.5, 0, Math.PI * 2);
-                    ectx.fillStyle = '#0066ff'; ectx.fill();
-                });
-            }
-            // Anchor squares (like Illustrator)
-            editorPts.forEach((p, i) => {
-                const isFirst = i === 0;
-                const nearFirst = !shapeClosed && editorMouse && !editorDragStart && isFirst && distToFirst(editorMouse) < CLOSE_RADIUS;
-                ectx.beginPath(); ectx.rect(p.x - 4, p.y - 4, 8, 8);
-                ectx.fillStyle = nearFirst ? '#e84545' : '#fff'; ectx.fill();
-                ectx.strokeStyle = nearFirst ? '#e84545' : '#000'; ectx.lineWidth = 1.5; ectx.stroke();
-            });
-            if (pendingPt) {
-                ectx.beginPath(); ectx.rect(pendingPt.x - 4, pendingPt.y - 4, 8, 8);
-                ectx.fillStyle = '#fff'; ectx.fill();
-                ectx.strokeStyle = '#000'; ectx.lineWidth = 1.5; ectx.stroke();
-            }
-        }
-
-        function distToFirst(pt) { if (!editorPts.length) return Infinity; const dx = pt.x - editorPts[0].x, dy = pt.y - editorPts[0].y; return Math.sqrt(dx * dx + dy * dy); }
-        function editorPos(e) { const rect = editorCanvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
-        function normalizePoints(pts) {
-            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-            pts.forEach(p => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); });
-            const ncx = (minX + maxX) / 2, ncy = (minY + maxY) / 2, ext = Math.max(maxX - minX, maxY - minY) / 2 || 1;
-            return pts.map(p => ({
-                x: (p.x - ncx) / ext, y: (p.y - ncy) / ext,
-                cpIn: p.cpIn ? { x: (p.cpIn.x - ncx) / ext, y: (p.cpIn.y - ncy) / ext } : null,
-                cpOut: p.cpOut ? { x: (p.cpOut.x - ncx) / ext, y: (p.cpOut.y - ncy) / ext } : null
-            }));
-        }
-        function closeAndConfirmReady() {
-            if (editorPts.length < 3) return;
-            shapeClosed = true;
-            document.getElementById('btn-confirm-shape').disabled = false;
-            updateEditorStatus('Shape closed. Press Confirm to apply to grid.');
-            renderEditor();
-        }
-        function closeEditorAndApply() { state.customPts = normalizePoints(editorPts); exitEditorMode(); renderGrid(); }
-        function enterEditorMode() {
-            state.editorMode = true; editorPts = []; shapeClosed = false; editorMouse = null;
-            editorDragStart = null; editorIsDragging = false; editorPendingHandle = null; editorDragging = null;
-            document.getElementById('btn-confirm-shape').disabled = true;
-            gridCanvas.style.display = 'none'; editorCanvas.style.display = 'block';
-            document.getElementById('editor-status').style.display = 'block';
-            updateEditorStatus('Click = sharp point  ·  Click+drag = smooth curve  ·  Click first point to close');
-            renderEditor();
-        }
-        function exitEditorMode() {
-            state.editorMode = false; editorCanvas.style.display = 'none';
-            document.getElementById('editor-status').style.display = 'none';
-            gridCanvas.style.display = 'block';
-        }
-        function updateEditorStatus(msg) { document.getElementById('editor-status').textContent = msg; }
-
-        editorCanvas.addEventListener('mousemove', e => {
-            editorMouse = editorPos(e);
-            if (editorDragging) {
-                const p = editorPts[editorDragging.ptIndex];
-                if (editorDragging.type === 'anchor') {
-                    const dx = editorMouse.x - p.x, dy = editorMouse.y - p.y;
-                    if (p.cpIn) { p.cpIn.x += dx; p.cpIn.y += dy; }
-                    if (p.cpOut) { p.cpOut.x += dx; p.cpOut.y += dy; }
-                    p.x = editorMouse.x; p.y = editorMouse.y;
-                } else if (editorDragging.type === 'cpIn') {
-                    p.cpIn = { x: editorMouse.x, y: editorMouse.y };
-                } else {
-                    p.cpOut = { x: editorMouse.x, y: editorMouse.y };
-                }
-                renderEditor(); return;
-            }
-            // Cursor feedback
-            const hit = hitTestEditor(editorMouse);
-            editorCanvas.style.cursor = hit ? 'grab' : 'crosshair';
-            if (editorDragStart) {
-                const dx = editorMouse.x - editorDragStart.x, dy = editorMouse.y - editorDragStart.y;
-                if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
-                    editorIsDragging = true;
-                    editorPendingHandle = {
-                        cpOut: { x: editorMouse.x, y: editorMouse.y },
-                        cpIn: { x: 2 * editorDragStart.x - editorMouse.x, y: 2 * editorDragStart.y - editorMouse.y }
-                    };
-                }
-            }
-            renderEditor();
-        });
-        editorCanvas.addEventListener('mouseleave', () => {
-            if (!editorDragStart && !editorDragging) editorMouse = null;
-            renderEditor();
-        });
-        editorCanvas.addEventListener('mousedown', e => {
-            e.preventDefault();
-            const pos = editorPos(e);
-            const hit = hitTestEditor(pos);
-            if (hit) {
-                editorDragging = hit;
-                editorCanvas.style.cursor = 'grabbing';
-                return;
-            }
-            if (shapeClosed) return;
-            editorDragStart = pos;
-            editorIsDragging = false; editorPendingHandle = null;
-            renderEditor();
-        });
-        editorCanvas.addEventListener('mouseup', e => {
-            if (editorDragging) {
-                editorDragging = null;
-                editorCanvas.style.cursor = 'crosshair';
-                renderEditor(); return;
-            }
-            if (shapeClosed) return;
-            const pos = editorDragStart || editorPos(e);
-            if (editorPts.length >= 3 && distToFirst(pos) < CLOSE_RADIUS && !editorIsDragging) {
-                editorDragStart = null; editorIsDragging = false; editorPendingHandle = null;
-                closeAndConfirmReady(); return;
-            }
-            editorPts.push({
-                x: pos.x, y: pos.y,
-                cpIn: editorPendingHandle ? editorPendingHandle.cpIn : null,
-                cpOut: editorPendingHandle ? editorPendingHandle.cpOut : null
-            });
-            editorDragStart = null; editorIsDragging = false; editorPendingHandle = null;
-            renderEditor();
-        });
-        // Double-click an anchor → toggle smooth handles
-        editorCanvas.addEventListener('dblclick', e => {
-            const pos = editorPos(e);
-            let hitIdx = -1;
-            for (let i = 0; i < editorPts.length; i++) {
-                if (distPt(pos, editorPts[i]) < EDIT_HIT) { hitIdx = i; break; }
-            }
-            if (hitIdx === -1) return;
-            const p = editorPts[hitIdx];
-            if (p.cpIn === null && p.cpOut === null) {
-                // Generate handles from tangent between neighbours
-                const n = editorPts.length;
-                const prev = editorPts[(hitIdx - 1 + n) % n];
-                const next = editorPts[(hitIdx + 1) % n];
-                let tx = next.x - prev.x, ty = next.y - prev.y;
-                const tlen = Math.sqrt(tx * tx + ty * ty) || 1;
-                tx /= tlen; ty /= tlen;
-                const hLen = Math.max(30, Math.min(distPt(p, prev), distPt(p, next)) * 0.35);
-                p.cpOut = { x: p.x + tx * hLen, y: p.y + ty * hLen };
-                p.cpIn = { x: p.x - tx * hLen, y: p.y - ty * hLen };
-            } else {
-                // Remove handles → sharp corner
-                p.cpIn = null; p.cpOut = null;
-            }
-            renderEditor();
         });
 
         function on(id, ev, fn, opts) {
@@ -2369,60 +1735,9 @@
             return el;
         }
 
-        on('btn-clear-shape', 'click', () => {
-            editorPts = []; shapeClosed = false;
-            editorDragStart = null; editorIsDragging = false; editorPendingHandle = null; editorDragging = null;
-            var confirmBtn = document.getElementById('btn-confirm-shape');
-            if (confirmBtn) confirmBtn.disabled = true;
-            updateEditorStatus('Click = sharp point  ·  Click+drag = smooth curve  ·  Click first point to close');
-            renderEditor();
-        });
-        on('btn-confirm-shape', 'click', closeEditorAndApply);
-
         // ═══════════════════════════════════════════════════
         //  CONTROLS WIRING
         // ═══════════════════════════════════════════════════
-
-        // Shape buttons
-        document.querySelectorAll('.shape-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active'); state.shape = btn.dataset.shape;
-                document.getElementById('custom-controls').style.display = state.shape === 'custom' ? 'block' : 'none';
-                if (state.shape === 'custom') { enterEditorMode(); }
-                else { if (state.editorMode) exitEditorMode(); renderGrid(); }
-            });
-        });
-
-        // Grid sliders
-        function bindSlider(id, valId, key, reset, suffix) {
-            const sl = document.getElementById(id), vl = document.getElementById(valId);
-            sl.addEventListener('input', () => {
-                var newVal = +sl.value;
-                if (key === 'cols' || key === 'rows') { if (state[key] !== newVal) state.exportRatio = null; }
-                state[key] = newVal; vl.textContent = sl.value + (suffix || '');
-                if (reset) { resetCells(); }
-                if (state.mode === 'image' && state.srcImage) {
-                    if (key === 'cols' || key === 'rows') state.imageManualGrid = true;
-                    applyImage();
-                } else renderGrid();
-            });
-        }
-        bindSlider('d-cols', 'd-cols-v', 'cols', true);
-        bindSlider('d-rows', 'd-rows-v', 'rows', true);
-        bindSlider('d-gap', 'd-gap-v', 'gap', false);
-
-        // Draw controls
-        on('d-brush', 'input', function () {
-            state.brushSize = +this.value;
-            var bv = document.getElementById('d-brush-v'); if (bv) bv.textContent = this.value;
-        });
-        // Rotation slider
-        on('d-rotation', 'input', function () {
-            state.rotation = +this.value;
-            var rv = document.getElementById('d-rotation-v'); if (rv) rv.textContent = this.value + '°';
-            renderGrid();
-        });
 
         // Global resolution (controls Image + Live resolution)
         on('g-res', 'input', function () {
@@ -2438,33 +1753,9 @@
             if (state.mode === 'image' && state.srcImage) applyImage();
         });
 
-        // Reference image
-        on('ref-input', 'change', e => loadRef(e.target.files[0]));
-        on('ref-zone', 'dragover', e => { e.preventDefault(); });
-        on('ref-zone', 'drop', e => { e.preventDefault(); loadRef(e.dataTransfer.files[0]); });
-        function loadRef(file) {
-            if (!file || !file.type.startsWith('image/')) return;
-            const reader = new FileReader();
-            reader.onload = ev => { const img = new Image(); img.onload = () => { state.refImage = img; document.getElementById('ref-name').textContent = file.name; renderGrid(); }; img.src = ev.target.result; };
-            reader.readAsDataURL(file);
-        }
-        on('ref-opacity', 'input', function () {
-            state.refOpacity = +this.value / 100;
-            var ov = document.getElementById('ref-opacity-v'); if (ov) ov.textContent = this.value + '%';
-            renderGrid();
-        });
-        on('btn-clear-ref', 'click', () => {
-            state.refImage = null;
-            var rn = document.getElementById('ref-name'); if (rn) rn.textContent = '';
-            var ri = document.getElementById('ref-input'); if (ri) ri.value = '';
-            renderGrid();
-        });
-
         // Fill mode switch – תמיד עוברים דרך switchToMode כדי לעצור מצלמה אם צריך
-        on('fm-draw', 'click', () => switchToMode('draw'));
         on('fm-image', 'click', () => switchToMode('image'));
         on('fm-live', 'click', () => switchToMode('live'));
-        on('mob-fm-draw', 'click', () => switchToMode('draw'));
         on('mob-fm-image', 'click', () => switchToMode('image'));
         on('mob-fm-live', 'click', () => switchToMode('live'));
 
@@ -2476,10 +1767,14 @@
             dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
             dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); loadFile(e.dataTransfer.files[0]); });
         }
+        function updateUploadZoneVisibility() {
+            const uz = document.getElementById('upload-zone');
+            if (uz) uz.style.display = (state.mode === 'image' && !state.srcImage) ? 'flex' : 'none';
+        }
         function loadFile(file) {
             if (!file || !file.type.startsWith('image/')) return;
             const reader = new FileReader();
-            reader.onload = ev => { const img = new Image(); img.onload = () => { state.srcImage = img; document.getElementById('file-name').textContent = file.name; applyImage(); }; img.src = ev.target.result; };
+            reader.onload = ev => { const img = new Image(); img.onload = () => { state.srcImage = img; document.getElementById('file-name').textContent = file.name; updateUploadZoneVisibility(); applyImage(); }; img.src = ev.target.result; };
             reader.readAsDataURL(file);
         }
 
@@ -2544,61 +1839,39 @@
             }).join('');
         }
 
-        // Brand palette (for OUTPUT colors: draw/image/live)
+        // Brand palette (for OUTPUT colors: image/live)
         const BRAND_PALETTE_ALL = [
             '#32282c', '#415066', '#324fcd', '#60575e', '#656140',
             '#b66350', '#7d8b96', '#6f8bc2', '#85a352', '#82a4b3',
             '#aaa377', '#a3aeb1', '#b0cddc', '#ddd49b', '#ffffff'
         ];
 
-        // Palette presets provided by user (used for Draw + Image + Live quantization)
+        // Palette presets provided by user (used for Image + Live quantization)
         const PALETTE_PRESETS = {
             moldy_orange_7: ['#04151f', '#17493e', '#7b9171', '#f5e4c9', '#e58929', '#7c351e', '#4d1f1d'],
-            oil_6: ['#fbf5ef', '#f2d3ab', '#c69fa5', '#8b6d9c', '#494d7e', '#272744'],
-            midnight_ablaze: ['#ff8274', '#d53c6a', '#7c183c', '#460e2b', '#31051e', '#1f0510', '#130208'],
             slso8: ['#0d2b45', '#203c56', '#544e68', '#8d697a', '#d08159', '#ffaa5e', '#ffd4a3', '#ffecd6'],
-            rust_gold_8: ['#f6cd26', '#ac6b26', '#563226', '#331c17', '#bb7f57', '#725956', '#393939', '#202020'],
-            blessing: ['#74569b', '#96fbc7', '#f7ffae', '#ffb3cb', '#d8bfd8'],
             // Additional palettes (from /color pallete/*.png)
-            twilight_5: ['#fbbbad', '#ee8695', '#4a7a96', '#333f58', '#292831'],
-            abyss_9: ['#000000', '#1f123a', '#3a1e7e', '#5429c2', '#5463d9', '#62aadd', '#7fe3dc', '#a0f5c6', '#ddf8d0'],
-            berry_nebula: ['#6ceded', '#6cb9c9', '#6d85a5', '#6e5181', '#6f1d5c', '#4f1446', '#2e0a30', '#0d001a'],
             chasm: ['#85daeb', '#5fc9e7', '#5fa1e7', '#5f6ee7', '#4c60aa', '#444774', '#32313b', '#463c5e', '#5d4776', '#855395', '#ab58a8', '#ca60ae', '#f3a787', '#f5daa7', '#8dd894', '#5dc190', '#4ab9a3', '#4593a5', '#5efdf7', '#ff5dcc', '#fdfe89', '#ffffff'],
-            citrink: ['#ffffff', '#fcf660', '#b2d942', '#52c33f', '#166e7a', '#254d70', '#252446', '#201533'],
-            cl8uds: ['#fcb08c', '#ef9d7f', '#d6938a', '#b48d92', '#a597a1', '#8fa0bf', '#9aabc9', '#a5b7d4'],
+            citrink: ['#ffffff', '#fcf660', '#b2d942', '#52c33f', '#166e7a', '#254d70', '#252446', '#201533', '#0f0a1a'],
             eulbink: ['#ffffff', '#0ce6f2', '#0098db', '#1e579c', '#203562', '#252446', '#201533'],
-            gamma_boy: ['#192119', '#252a2d', '#253825', '#324b41', '#4e4b5a', '#476a2f', '#6d7270', '#69835d', '#8c7661', '#8c8980', '#84967b', '#82a641', '#a39b6c', '#a3ad8b', '#b3c392', '#b5db66'],
             gothic_bit: ['#0e0e12', '#1a1a24', '#333346', '#535373', '#8080a4', '#a6a6bf', '#c1c1d2', '#e6e6ec'],
             pollen8: ['#73464c', '#ab5675', '#ee6a7c', '#ffa7a5', '#ffe07e', '#ffe7d6', '#72dcbb', '#34acba'],
             pspixel: ['#f000bd', '#8720cc', '#f08000', '#d2136d', '#f0ec00', '#a54a04', '#a2f000', '#4fb414', '#26f9ff', '#316fea', '#2b53aa', '#011b39', '#2f5b79', '#4f9396', '#9cccb3', '#fff2ca'],
-            red_blood_pain: ['#7e1f23', '#c4181f', '#120a19', '#5e4069'],
             vanilla_milkshake: ['#28282e', '#6c5671', '#d9c8bf', '#f98284', '#b0a9e4', '#accce4', '#b3e3da', '#feaae4', '#87a889', '#b0eb93', '#e9f59d', '#ffe6c6', '#dea38b', '#ffc384', '#fff7a0', '#fff7e4'],
-            demichrome_2bit: ['#211e20', '#555568', '#a0a08b', '#e9efec'],
             p31: ['#636663', '#87857c', '#bcad9f', '#f2b888', '#eb9661', '#b55945', '#734c44', '#3d3333', '#593e47', '#7a5859', '#a57855', '#de9f47', '#fdd179', '#fee1b8', '#d4c692', '#a6b04f', '#819447', '#44702d', '#2f4d2f', '#546756', '#89a477', '#a4c5af', '#cae6d9', '#f1f6f0', '#d5d6db', '#bbc3d0', '#96a9c1', '#6c81a1', '#405273', '#303843', '#14233a'],
         };
 
         // Preset buttons are built directly from PALETTE_PRESETS (no PNG parsing / no async).
         const PALETTE_LABELS = {
             moldy_orange_7: 'Moldy',
-            oil_6: 'Oil',
-            midnight_ablaze: 'Midnight',
             slso8: 'SLSO8',
-            rust_gold_8: 'RustGold',
-            blessing: 'Blessing',
-            twilight_5: 'Twilight',
-            abyss_9: 'Abyss',
-            berry_nebula: 'Berry',
             chasm: 'Chasm',
             citrink: 'Citrink',
-            cl8uds: 'CL8UDS',
             eulbink: 'Eulbink',
-            gamma_boy: 'Gamma',
             gothic_bit: 'Gothic',
             pollen8: 'Pollen8',
             pspixel: 'PSPixel',
-            red_blood_pain: 'Blood',
             vanilla_milkshake: 'Vanilla',
-            demichrome_2bit: 'Demichrome',
             p31: '31',
         };
 
@@ -2609,11 +1882,13 @@
             Object.keys(PALETTE_PRESETS).forEach((key) => {
                 const colors = PALETTE_PRESETS[key];
                 if (!Array.isArray(colors) || colors.length < 2) return;
+                const label = PALETTE_LABELS[key] || key.replace(/_/g, ' ');
                 const b = document.createElement('button');
                 b.type = 'button';
                 b.className = 'pal-tgt';
                 b.dataset.preset = key;
-                b.textContent = PALETTE_LABELS[key] || key.replace(/_/g, ' ');
+                b.textContent = label;
+                b.title = label; // full name on hover/long-press when the button clips it
                 if (key === ACTIVE_PALETTE_KEY) b.classList.add('active');
                 el.appendChild(b);
             });
@@ -2627,7 +1902,7 @@
             return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
         }
 
-        let ACTIVE_PALETTE_KEY = 'slso8';
+        let ACTIVE_PALETTE_KEY = 'pollen8';
         let ACTIVE_PALETTE = PALETTE_PRESETS[ACTIVE_PALETTE_KEY].slice();
         let ACTIVE_PALETTE_RGB = ACTIVE_PALETTE.map(hexToRgb);
 
@@ -2674,21 +1949,6 @@
             return { dark, light };
         }
 
-        function renderPaletteGrid(containerId, onPick) {
-            const el = document.getElementById(containerId);
-            if (!el) return;
-            el.innerHTML = '';
-            ACTIVE_PALETTE.forEach(hex => {
-                const b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'pal-swatch';
-                b.style.background = hex;
-                b.setAttribute('aria-label', 'Color ' + hex);
-                b.addEventListener('click', () => onPick(hex));
-                el.appendChild(b);
-            });
-        }
-
         function applyImage() {
             if (!state.srcImage) return;
             const src = state.srcImage;
@@ -2703,12 +1963,6 @@
                 imgRows = N;
             }
             state.cols = imgCols; state.rows = imgRows;
-            const dc = document.getElementById('d-cols');
-            const dr = document.getElementById('d-rows');
-            dc.max = Math.max(+dc.max || 40, imgCols);
-            dr.max = Math.max(+dr.max || 40, imgRows);
-            dc.value = imgCols; document.getElementById('d-cols-v').textContent = imgCols;
-            dr.value = imgRows; document.getElementById('d-rows-v').textContent = imgRows;
             const bgCut = state.imgBgCut;
             const px = sampleImg(src, imgCols, imgRows);
             const lum = edgeEnhanceLum(px, imgCols, imgRows, state.imgEdge);
@@ -2783,89 +2037,8 @@
         }
 
         // ═══════════════════════════════════════════════════
-        //  EXPORT FRAME + PREVIEW
+        //  EXPORT PREVIEW
         // ═══════════════════════════════════════════════════
-        function formatExportDate(d) {
-            const dt = d instanceof Date ? d : new Date();
-            const yyyy = dt.getFullYear();
-            const mm = String(dt.getMonth() + 1).padStart(2, '0');
-            const dd = String(dt.getDate()).padStart(2, '0');
-            return `${yyyy}-${mm}-${dd}`;
-        }
-
-        function makeFramedCanvas(sourceCanvas, opts) {
-            const title = (opts && opts.title) ? String(opts.title) : 'Pixel Art Maker';
-            const credit = (opts && opts.credit) ? String(opts.credit) : '© shaked kletter';
-            const dateStr = (opts && opts.dateStr) ? String(opts.dateStr) : formatExportDate(new Date());
-
-            const srcW = sourceCanvas.width, srcH = sourceCanvas.height;
-            const pad = Math.round(Math.max(32, Math.min(srcW, srcH) * 0.05));
-            const headerH = Math.round(Math.max(56, Math.min(srcW, srcH) * 0.07));
-            const footerH = Math.round(Math.max(54, Math.min(srcW, srcH) * 0.065));
-            const border = 1;
-
-            const out = document.createElement('canvas');
-            out.width = srcW + pad * 2;
-            out.height = srcH + pad * 2 + headerH + footerH;
-            const ctx = out.getContext('2d');
-
-            // frosted card background
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, out.width, out.height);
-            ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-            ctx.lineWidth = border;
-            ctx.strokeRect(0.5, 0.5, out.width - 1, out.height - 1);
-
-            // header
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(border, border, out.width - border * 2, headerH);
-            ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-            ctx.beginPath();
-            ctx.moveTo(border, headerH + border);
-            ctx.lineTo(out.width - border, headerH + border);
-            ctx.stroke();
-
-            // footer
-            const footerTop = out.height - footerH - border;
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(border, footerTop, out.width - border * 2, footerH);
-            ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-            ctx.beginPath();
-            ctx.moveTo(border, footerTop);
-            ctx.lineTo(out.width - border, footerTop);
-            ctx.stroke();
-
-            // content area
-            const contentX = pad;
-            const contentY = pad + headerH;
-            const contentW = out.width - pad * 2;
-            const contentH = out.height - pad * 2 - headerH - footerH;
-            // fit source inside content (contain)
-            const s = Math.min(contentW / srcW, contentH / srcH);
-            const dw = Math.round(srcW * s);
-            const dh = Math.round(srcH * s);
-            const dx = contentX + Math.round((contentW - dw) / 2);
-            const dy = contentY + Math.round((contentH - dh) / 2);
-            ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(sourceCanvas, dx, dy, dw, dh);
-            ctx.imageSmoothingEnabled = true;
-
-            // typography (mono, like UI)
-            ctx.fillStyle = '#111';
-            ctx.textBaseline = 'middle';
-            ctx.font = `700 ${Math.round(headerH * 0.34)}px "IBM Plex Mono", monospace`;
-            ctx.textAlign = 'center';
-            ctx.fillText(title.toUpperCase(), out.width / 2, headerH / 2 + 1);
-
-            ctx.font = `600 ${Math.round(footerH * 0.28)}px "IBM Plex Mono", monospace`;
-            ctx.textAlign = 'left';
-            ctx.fillText(credit, pad, footerTop + footerH / 2);
-            ctx.textAlign = 'right';
-            ctx.fillText(dateStr, out.width - pad, footerTop + footerH / 2);
-
-            return out;
-        }
-
         let __pendingExport = null; // { type: 'image', canvas, filename } | { type: 'video', blob, filename, mimeType, url }
         let __exportModalWired = false;
 
@@ -3004,7 +2177,6 @@
             const cs = scale, strokeW = state.strokeW * scale, gapS = gap * scale;
             const W = state.cols * cs + (state.cols - 1) * gapS, H = state.rows * cs + (state.rows - 1) * gapS;
             const r = cs / 2 * .92;
-            const rotRad = state.rotation * Math.PI / 180;
             const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
             const tc = tmp.getContext('2d');
             if (solidBg) { tc.fillStyle = state.bg; tc.fillRect(0, 0, W, H); }
@@ -3012,16 +2184,11 @@
                 for (let col = 0; col < state.cols; col++) {
                     const cx = col * (cs + gapS) + cs / 2, cy = row * (cs + gapS) + cs / 2;
                     const cellColor = state.cells[row][col];
-                    tc.save();
-                    tc.translate(cx, cy);
-                    tc.rotate(rotRad);
-                    tc.translate(-cx, -cy);
-                    tracePath(tc, cx, cy, r, r, state.shape, state.customPts);
+                    tracePath(tc, cx, cy, r, r);
                     if (cellColor !== null && includeFill) {
                         tc.fillStyle = cellColor; tc.fill();
                     }
                     if (includeStroke) { tc.strokeStyle = state.strokeCol; tc.lineWidth = strokeW; tc.stroke(); }
-                    tc.restore();
                 }
             }
             return tmp;
@@ -3051,7 +2218,7 @@
             return cnv;
         }
 
-        // Download = הקנבס עצמו: ב-Live העתקה של liveCoverCanvas, ב-Draw יחס הגריד
+        // Download = הקנבס עצמו: ב-Live העתקה של liveCoverCanvas, ב-Upload יחס הגריד
         function downloadPixels() {
             var cnv;
             if (state.mode === 'live' && liveCoverCanvas && liveCoverCanvas.width > 0 && liveCoverCanvas.height > 0) {
@@ -3076,8 +2243,7 @@
                 ctx.fillRect(0, 0, cnv.width, cnv.height);
                 drawGridToContext(ctx, cnv.width, cnv.height);
             }
-            const framed = makeFramedCanvas(cnv, { title: 'Pixel Art Maker', credit: '© shaked kletter' });
-            openExportPreview(framed, `pixel_art_maker_${Date.now()}.png`);
+            openExportPreview(cnv, `pixel_art_maker_${Date.now()}.png`);
         }
         document.getElementById('dl-pixels').addEventListener('click', downloadPixels);
         document.getElementById('btn-clear').addEventListener('click', () => { resetCells(); renderGrid(); });
@@ -3091,7 +2257,7 @@
 
         const liveState = {
             stream: null, rafId: null,
-            res: 100, threshold: 132, bgCut: 255, edge: 10,
+            res: 250, threshold: 132, bgCut: 255, edge: 10,
             fillCol: '#000000', fillCol2: '#888888', strokeCol: '#000000', bgCol: '#ffffff',
             mirror: true,
             bgPixels: null, bgCols: 0, bgRows: 0, bgDiff: 30,
@@ -3163,26 +2329,104 @@
             __liveZoomRange = { min, max, step };
         }
 
+        // ── Curved zoom dial geometry ───────────────────────
+        // A ruler bent along an arc, like a phone camera's zoom control: the circle's
+        // center sits below the visible SVG box, so only its top "dome" shows. Low zoom
+        // is on the left (near ANGLE_MAX, standard math angle), high zoom on the right
+        // (near ANGLE_MIN) — angle decreases as the value increases.
+        const ZOOM_DIAL_CX = 120, ZOOM_DIAL_CY = 134, ZOOM_DIAL_R = 119;
+        const ZOOM_DIAL_ANGLE_MIN = 15, ZOOM_DIAL_ANGLE_MAX = 165;
+
+        function zoomValueToAngle(v, min, max) {
+            const t = max > min ? (v - min) / (max - min) : 0;
+            return ZOOM_DIAL_ANGLE_MAX - Math.max(0, Math.min(1, t)) * (ZOOM_DIAL_ANGLE_MAX - ZOOM_DIAL_ANGLE_MIN);
+        }
+        function zoomAngleToValue(angle, min, max) {
+            const t = (ZOOM_DIAL_ANGLE_MAX - angle) / (ZOOM_DIAL_ANGLE_MAX - ZOOM_DIAL_ANGLE_MIN);
+            return min + Math.max(0, Math.min(1, t)) * (max - min);
+        }
+        function zoomAnglePoint(angleDeg, radius) {
+            const rad = angleDeg * Math.PI / 180;
+            return { x: ZOOM_DIAL_CX + radius * Math.cos(rad), y: ZOOM_DIAL_CY - radius * Math.sin(rad) };
+        }
+
         function renderZoomTicks() {
-            const ticks = document.getElementById('mob-zoom-ticks');
-            if (!ticks) return;
+            const g = document.getElementById('mob-zoom-ticks-g');
+            const dial = document.getElementById('mob-zoom-dial');
+            if (!g) return;
             const { min, max } = __liveZoomRange || { min: 1, max: 2 };
-            const candidates = [0.1, 0.3, 0.5, 1, 2];
-            const vals = candidates.filter(v => v >= min - 1e-9 && v <= max + 1e-9);
-            // ensure at least endpoints
-            if (!vals.includes(min)) vals.unshift(min);
-            if (!vals.includes(max)) vals.push(max);
-            // unique + sort
-            const uniq = Array.from(new Set(vals.map(v => +v.toFixed(2)))).sort((a, b) => a - b);
-            ticks.innerHTML = uniq.map(v => `<button type="button" data-z="${v}">${String(v).replace(/\.0+$/,'')}×</button>`).join('');
+            if (dial) {
+                dial.setAttribute('aria-valuemin', String(min));
+                dial.setAttribute('aria-valuemax', String(max));
+            }
+            const NUM_TICKS = 20;
+            const p0 = zoomAnglePoint(ZOOM_DIAL_ANGLE_MIN, ZOOM_DIAL_R);
+            const p1 = zoomAnglePoint(ZOOM_DIAL_ANGLE_MAX, ZOOM_DIAL_R);
+            let svg = `<path d="M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${ZOOM_DIAL_R} ${ZOOM_DIAL_R} 0 0 0 ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}" fill="none" stroke="var(--border)" stroke-width="1" opacity="0.5" />`;
+            for (let i = 0; i <= NUM_TICKS; i++) {
+                const t = i / NUM_TICKS;
+                const v = min + t * (max - min);
+                const angle = zoomValueToAngle(v, min, max);
+                const isMajor = (i % 4 === 0);
+                const rInner = ZOOM_DIAL_R - (isMajor ? 16 : 9);
+                const po = zoomAnglePoint(angle, ZOOM_DIAL_R);
+                const pi = zoomAnglePoint(angle, rInner);
+                svg += `<line x1="${po.x.toFixed(1)}" y1="${po.y.toFixed(1)}" x2="${pi.x.toFixed(1)}" y2="${pi.y.toFixed(1)}" stroke="var(--text)" stroke-width="${isMajor ? 1.6 : 1}" opacity="${isMajor ? 0.85 : 0.4}" />`;
+                if (isMajor) {
+                    const pl = zoomAnglePoint(angle, ZOOM_DIAL_R - 28);
+                    const label = v < 1 ? v.toFixed(1) : String(Math.round(v * 10) / 10).replace(/\.0$/, '');
+                    svg += `<text x="${pl.x.toFixed(1)}" y="${pl.y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="10" font-family="'IBM Plex Mono', monospace" fill="var(--muted)">${label}×</text>`;
+                }
+            }
+            g.innerHTML = svg;
+            updateZoomDialIndicator(liveState.userZoom || min);
+        }
+
+        function updateZoomDialIndicator(value) {
+            const g = document.getElementById('mob-zoom-ticks-g');
+            const dial = document.getElementById('mob-zoom-dial');
+            if (!g) return;
+            const { min, max } = __liveZoomRange || { min: 1, max: 2 };
+            const v = Math.max(min, Math.min(max, value));
+            const angle = zoomValueToAngle(v, min, max);
+            const old = document.getElementById('mob-zoom-indicator');
+            if (old) old.remove();
+            const po = zoomAnglePoint(angle, ZOOM_DIAL_R + 5);
+            const pi = zoomAnglePoint(angle, ZOOM_DIAL_R - 20);
+            const ns = 'http://www.w3.org/2000/svg';
+            const ind = document.createElementNS(ns, 'g');
+            ind.id = 'mob-zoom-indicator';
+            const line = document.createElementNS(ns, 'line');
+            line.setAttribute('x1', po.x); line.setAttribute('y1', po.y);
+            line.setAttribute('x2', pi.x); line.setAttribute('y2', pi.y);
+            line.setAttribute('stroke', 'var(--zoom-accent)');
+            line.setAttribute('stroke-width', '2.5');
+            ind.appendChild(line);
+            const dot = document.createElementNS(ns, 'circle');
+            dot.setAttribute('cx', String(po.x)); dot.setAttribute('cy', String(po.y));
+            dot.setAttribute('r', '4');
+            dot.setAttribute('fill', 'var(--zoom-accent)');
+            ind.appendChild(dot);
+            g.appendChild(ind);
+
+            if (dial) dial.setAttribute('aria-valuenow', v.toFixed(2));
+            const label = document.getElementById('mob-zoom-dial-label');
+            if (label) {
+                let s = v.toFixed(2);
+                if (s.indexOf('.') !== -1) s = s.replace(/0+$/, '').replace(/\.$/, '');
+                label.textContent = s + '×';
+            }
         }
 
         function setZoomUIValue(val) {
             const r = __liveZoomRange || { min: 1, max: 2 };
             const z = Math.max(r.min, Math.min(r.max, Number(val) || 1));
             liveState.userZoom = z;
-            const fab = document.getElementById('mob-zoom');
-            if (fab) fab.textContent = z.toFixed(2).replace(/\.00$/, '') + '×';
+            let zStr = z.toFixed(2);
+            if (zStr.indexOf('.') !== -1) zStr = zStr.replace(/0+$/, '').replace(/\.$/, '');
+            const valEl = document.getElementById('mob-zoom-val');
+            if (valEl) valEl.textContent = zStr + '×';
+            updateZoomDialIndicator(z);
         }
 
         function applyHardwareZoomIfPossible(val) {
@@ -3201,52 +2445,52 @@
         function wireMobileZoomUI() {
             const fab = document.getElementById('mob-zoom');
             const pop = document.getElementById('mob-zoom-pop');
-            const ticks = document.getElementById('mob-zoom-ticks');
-            if (!fab || !pop || !ticks) return;
+            const dial = document.getElementById('mob-zoom-dial');
+            if (!fab || !pop || !dial) return;
             if (fab.__wired) return;
             fab.__wired = true;
 
-            function openPop() { pop.style.display = 'block'; pop.setAttribute('aria-hidden', 'false'); }
+            function openPop() { pop.style.display = 'flex'; pop.setAttribute('aria-hidden', 'false'); }
             function closePop() { pop.style.display = 'none'; pop.setAttribute('aria-hidden', 'true'); }
-            function togglePop() { (pop.style.display === 'block') ? closePop() : openPop(); }
+            function togglePop() { (pop.style.display === 'flex') ? closePop() : openPop(); }
 
             fab.addEventListener('click', (e) => { e.stopPropagation(); togglePop(); });
             document.addEventListener('click', (e) => {
-                if (pop.style.display !== 'block') return;
+                if (pop.style.display !== 'flex') return;
                 if (e.target === pop || pop.contains(e.target) || e.target === fab) return;
                 closePop();
             });
 
-            if (ticks) {
-                ticks.addEventListener('click', (e) => {
-                    let btn = e.target;
-                    while (btn && btn !== ticks) {
-                        if (btn.dataset && btn.dataset.z) break;
-                        btn = btn.parentElement;
-                    }
-                    if (!btn || btn === ticks || !btn.dataset || !btn.dataset.z) return;
-                    const v = parseFloat(btn.dataset.z) || 1;
-                    setZoomUIValue(v);
-                    applyHardwareZoomIfPossible(v);
-                    // Active state (white text on black bg)
-                    try {
-                        ticks.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
-                    } catch (_) { }
-                    openPop();
-                });
+            // Drag anywhere on the dial — the angle from its center to your finger maps to
+            // a zoom value, updated (and applied to the camera) live as you move, not just
+            // on release.
+            let dragging = false;
+            function pointToZoom(clientX, clientY) {
+                const rect = dial.getBoundingClientRect();
+                if (!rect.width || !rect.height) return;
+                const x = (clientX - rect.left) * (240 / rect.width);
+                const y = (clientY - rect.top) * (172 / rect.height);
+                const dx = x - ZOOM_DIAL_CX, dy = ZOOM_DIAL_CY - y;
+                let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                angle = Math.max(ZOOM_DIAL_ANGLE_MIN, Math.min(ZOOM_DIAL_ANGLE_MAX, angle));
+                const { min, max } = __liveZoomRange || { min: 1, max: 2 };
+                const v = zoomAngleToValue(angle, min, max);
+                setZoomUIValue(v);
+                applyHardwareZoomIfPossible(v);
             }
+            dial.addEventListener('pointerdown', (e) => {
+                dragging = true;
+                try { dial.setPointerCapture(e.pointerId); } catch (_) { }
+                pointToZoom(e.clientX, e.clientY);
+            });
+            dial.addEventListener('pointermove', (e) => { if (dragging) pointToZoom(e.clientX, e.clientY); });
+            dial.addEventListener('pointerup', (e) => {
+                dragging = false;
+                try { dial.releasePointerCapture(e.pointerId); } catch (_) { }
+            });
+            dial.addEventListener('pointercancel', () => { dragging = false; });
 
-            // init
             setZoomUIValue(liveState.userZoom || 1);
-            try {
-                if (ticks) {
-                    const cur = liveState.userZoom || 1;
-                    ticks.querySelectorAll('button').forEach(b => {
-                        const v = parseFloat(b.dataset && b.dataset.z ? b.dataset.z : '') || NaN;
-                        b.classList.toggle('active', Math.abs(v - cur) < 1e-6);
-                    });
-                }
-            } catch (_) { }
             closePop();
         }
 
@@ -3445,9 +2689,16 @@
                 ensureLiveOptionsUI();
                 wireMobileZoomUI();
 
-                liveState.stream = await navigator.mediaDevices.getUserMedia({
-                    video: getLiveVideoConstraints(), audio: false
-                });
+                try {
+                    // Ask for mic audio too (used by video recording); camera still works without it.
+                    liveState.stream = await navigator.mediaDevices.getUserMedia({
+                        video: getLiveVideoConstraints(), audio: true
+                    });
+                } catch (_) {
+                    liveState.stream = await navigator.mediaDevices.getUserMedia({
+                        video: getLiveVideoConstraints(), audio: false
+                    });
+                }
                 liveVideo.srcObject = liveState.stream;
                 await liveVideo.play();
                 try {
@@ -3482,7 +2733,7 @@
                 liveState.rafId = requestAnimationFrame(liveLoop);
             } catch (err) {
                 alert('Camera error: ' + err.message);
-                switchToMode('draw');
+                switchToMode('image');
             }
         }
 
@@ -3517,7 +2768,6 @@
                     const fi = document.getElementById('file-input');
                     if (fi) fi.value = '';
                 }
-                // Reset cells + undo stack
                 resetCells();
             }
 
@@ -3526,70 +2776,20 @@
                 if (state.gapBeforeLive !== null) {
                     state.gap = state.gapBeforeLive;
                     state.gapBeforeLive = null;
-                    const gapSl = document.getElementById('d-gap');
-                    const gapV = document.getElementById('d-gap-v');
-                    if (gapSl) gapSl.value = String(state.gap);
-                    if (gapV) gapV.textContent = String(state.gap);
                 }
             }
             if (mode === 'live') {
                 if (state.gapBeforeLive === null) state.gapBeforeLive = state.gap;
                 state.gap = 0;
-                const gapSl = document.getElementById('d-gap');
-                const gapV = document.getElementById('d-gap-v');
-                if (gapSl) gapSl.value = '0';
-                if (gapV) gapV.textContent = '0';
             }
             state.mode = mode;
             document.querySelectorAll('.fm-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.mob-fm-btn').forEach(b => b.classList.remove('active'));
-            var drawOpts = document.getElementById('draw-options');
-            var imgOpts = document.getElementById('image-options');
             var liveOpts = document.getElementById('live-options');
-            if (drawOpts) drawOpts.style.display = 'none';
-            if (imgOpts) imgOpts.style.display = 'none';
             if (liveOpts) liveOpts.style.display = 'none';
-            var gridSection = document.getElementById('grid-section');
-            var fillSection = document.getElementById('fill-section');
-            // Hide Grid in Live + Upload (image): resolution slider already controls it
-            if (gridSection) gridSection.style.display = (mode === 'live' || mode === 'image') ? 'none' : '';
-            // Hide Fill section in Live + Upload (prevents empty separators/boxes)
-            if (fillSection) fillSection.style.display = (mode === 'draw') ? '' : 'none';
-            // In Live/Upload we hide Grid section, so renumber Palette to 02 (otherwise keep 03)
-            var palNum = document.querySelector('#palette-section .sec-num');
-            if (palNum) palNum.textContent = (mode === 'live' || mode === 'image') ? '02' : '03';
-            // Upload zone lives under Palette and is shown only in Upload (image) mode
-            var uploadZone = document.getElementById('upload-zone');
-            if (uploadZone) uploadZone.style.display = (mode === 'image') ? '' : 'none';
-            if (mode === 'draw') {
-                var fmDraw = document.getElementById('fm-draw'); if (fmDraw) fmDraw.classList.add('active');
-                var mobFmDraw = document.getElementById('mob-fm-draw'); if (mobFmDraw) mobFmDraw.classList.add('active');
-                if (drawOpts) drawOpts.style.display = '';
-                gridCanvas.style.cursor = 'crosshair';
-                state.hideGrid = false;
-                // Ensure Draw always starts from the default grid (fixes Live→Draw carrying huge cols/rows)
-                state.cols = 20;
-                state.rows = 20;
-                state.imageManualGrid = false;
-                const dc = document.getElementById('d-cols');
-                const dr = document.getElementById('d-rows');
-                if (dc) { dc.value = '20'; dc.max = String(Math.max(+dc.max || 200, 20)); }
-                if (dr) { dr.value = '20'; dr.max = String(Math.max(+dr.max || 200, 20)); }
-                const dcv = document.getElementById('d-cols-v'); if (dcv) dcv.textContent = '20';
-                const drv = document.getElementById('d-rows-v'); if (drv) drv.textContent = '20';
-                resetCells();
-                if (window.innerWidth <= 700) {
-                    var pan = document.getElementById('panel');
-                    var bar = document.getElementById('panel-toggle-bar');
-                    if (pan && bar) {
-                        pan.classList.add('panel-open');
-                        bar.classList.add('active');
-                        document.body.classList.add('panel-open');
-                        syncPanelOpenHeightVar();
-                    }
-                }
-                renderGrid();
-            } else if (mode === 'image') {
+            // Upload zone overlays the canvas, shown only in Upload mode with no photo loaded yet
+            updateUploadZoneVisibility();
+            if (mode === 'image') {
                 state.hideGrid = false;
                 var fmImg = document.getElementById('fm-image'); if (fmImg) fmImg.classList.add('active');
                 var mobFmImg = document.getElementById('mob-fm-image'); if (mobFmImg) mobFmImg.classList.add('active');
@@ -3608,7 +2808,6 @@
                 startCamera();
             }
             if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
-            updateDesktopUndoFab();
         }
 
         // Live colors are derived from the selected palette preset
@@ -3627,7 +2826,7 @@
 
         // Mobile FAB visibility by mode:
         // - Live: show shutter + flip + ratio + download
-        // - Draw/Image: show download only
+        // - Upload: show download only
         function updateMobileButtonsForMode() {
             const isSmall = isMobileLayout();
             var modeBtn = document.getElementById('mob-capture-mode');
@@ -3637,7 +2836,6 @@
                 mobDl.style.display = 'none';
                 if (mobZoom) mobZoom.style.display = 'none';
                 if (mobZoomPop) mobZoomPop.style.display = 'none';
-                if (mobUndo) mobUndo.style.display = 'none';
                 if (mobRatio) mobRatio.style.display = 'none';
                 if (modeBtn) modeBtn.style.display = 'none';
                 return;
@@ -3647,12 +2845,10 @@
             if (panelOpen) {
                 mobShutter.style.display = 'none';
                 mobFlip.style.display = 'none';
-                // Keep Download available in Draw/Upload even when panel is open.
+                // Keep Download available in Upload even when panel is open.
                 // In Live we download via the preview modal (from shutter/record stop), so keep it hidden.
                 mobDl.style.display = (state.mode === 'live') ? 'none' : 'block';
                 if (mobZoom) mobZoom.style.display = (state.mode === 'live') ? 'flex' : 'none';
-                // Keep Undo available in Draw even when panel is open.
-                if (mobUndo) mobUndo.style.display = (state.mode === 'draw') ? 'flex' : 'none';
                 if (mobRatio) mobRatio.style.display = 'none';
                 if (modeBtn) modeBtn.style.display = 'none';
                 return;
@@ -3660,10 +2856,8 @@
 
             // Mobile download FAB:
             // - In Live we download via the preview modal, so hide this button.
-            // - In other modes keep it available.
+            // - In Upload keep it available.
             mobDl.style.display = (state.mode === 'live') ? 'none' : 'block';
-            // Undo only in Draw (Upload doesn't need undo)
-            if (mobUndo) mobUndo.style.display = (state.mode === 'draw') ? 'flex' : 'none';
             if (mobZoom) mobZoom.style.display = (state.mode === 'live') ? 'flex' : 'none';
             if (mobZoomPop && state.mode !== 'live') mobZoomPop.style.display = 'none';
 
@@ -3684,11 +2878,6 @@
             }
         }
 
-        function updateDesktopUndoFab() {
-            const show = (getLayoutMode() === 'desktop' && state.mode === 'draw');
-            document.body.classList.toggle('show-desktop-undo', !!show);
-        }
-
         function toggleMobilePanel() {
             panel.classList.toggle('panel-open');
             var isOpen = panel.classList.contains('panel-open');
@@ -3699,13 +2888,13 @@
             requestAnimationFrame(() => {
                 const h = isOpen ? Math.round(panel.getBoundingClientRect().height) : 0;
                 document.documentElement.style.setProperty('--panel-open-h', h + 'px');
-                if (!state.editorMode) renderGrid();
+                renderGrid();
             });
             // Panel opens with a transition; resync after it settles so canvas always moves up.
             if (isOpen) {
                 setTimeout(() => {
                     syncPanelOpenHeightVar();
-                    if (!state.editorMode) renderGrid();
+                    renderGrid();
                 }, 380);
             }
         }
@@ -3764,17 +2953,40 @@
         if (mobRatio) mobRatio.addEventListener('click', cycleAspectRatio);
 
         var mobCaptureModeBtn = document.getElementById('mob-capture-mode');
+        function setCaptureMode(mode) {
+            state.captureMode = (mode === 'video') ? 'video' : 'image';
+            if (mobCaptureModeBtn) mobCaptureModeBtn.textContent = state.captureMode;
+        }
         if (mobCaptureModeBtn) mobCaptureModeBtn.addEventListener('click', function () {
-            state.captureMode = state.captureMode === 'image' ? 'video' : 'image';
-            this.textContent = state.captureMode;
+            setCaptureMode(state.captureMode === 'image' ? 'video' : 'image');
         });
+
+        // Swipe left/right on the viewfinder to switch Photo <-> Video, like a phone camera's mode row.
+        (function () {
+            let sx = 0, sy = 0, tracking = false;
+            const SWIPE_MIN = 40;
+            gridCanvas.addEventListener('touchstart', (e) => {
+                if (state.mode !== 'live' || !e.touches || e.touches.length !== 1) { tracking = false; return; }
+                tracking = true;
+                sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+            }, { passive: true });
+            gridCanvas.addEventListener('touchend', (e) => {
+                if (!tracking) return;
+                tracking = false;
+                if (state.mode !== 'live') return;
+                const t = e.changedTouches && e.changedTouches[0];
+                if (!t) return;
+                const dx = t.clientX - sx, dy = t.clientY - sy;
+                if (Math.abs(dx) > SWIPE_MIN && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    setCaptureMode(state.captureMode === 'image' ? 'video' : 'image');
+                }
+            }, { passive: true });
+        })();
 
         var liveVideoRecorder = null;
         var recordedChunks = [];
         var liveRecordCanvas = null;
         var liveRecordCtx = null;
-        var liveRecordInnerCanvas = null;
-        var liveRecordInnerCtx = null;
         var liveRecordInterval = null;
         var LIVE_RECORD_FPS = 30;
 
@@ -3793,8 +3005,6 @@
                 mobShutter.classList.remove('recording');
                 liveRecordCanvas = null;
                 liveRecordCtx = null;
-                liveRecordInnerCanvas = null;
-                liveRecordInnerCtx = null;
                 return;
             }
             recordedChunks = [];
@@ -3804,19 +3014,17 @@
             liveRecordCanvas.width = dim.w;
             liveRecordCanvas.height = dim.h;
             liveRecordCtx = liveRecordCanvas.getContext('2d');
-            // Record with frame: draw mosaic into an inner canvas, then composite with card template
-            liveRecordInnerCanvas = document.createElement('canvas');
-            const innerPad = Math.round(Math.max(32, Math.min(dim.w, dim.h) * 0.05));
-            const innerHeader = Math.round(Math.max(56, Math.min(dim.w, dim.h) * 0.07));
-            const innerFooter = Math.round(Math.max(54, Math.min(dim.w, dim.h) * 0.065));
-            liveRecordInnerCanvas.width = Math.max(1, dim.w - innerPad * 2);
-            liveRecordInnerCanvas.height = Math.max(1, dim.h - innerPad * 2 - innerHeader - innerFooter);
-            liveRecordInnerCtx = liveRecordInnerCanvas.getContext('2d');
-            drawGridToContext(liveRecordInnerCtx, liveRecordInnerCanvas.width, liveRecordInnerCanvas.height);
+            // Seed real content before the stream/recorder start, so the first
+            // captured frame isn't a blank black canvas.
+            drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
             var mime = 'video/webm';
             if (MediaRecorder.isTypeSupported('video/mp4')) mime = 'video/mp4';
             else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) mime = 'video/webm;codecs=vp9';
-            var stream = liveRecordCanvas.captureStream(LIVE_RECORD_FPS);
+            var canvasStream = liveRecordCanvas.captureStream(LIVE_RECORD_FPS);
+            var audioTracks = (liveState.stream && liveState.stream.getAudioTracks) ? liveState.stream.getAudioTracks() : [];
+            var stream = audioTracks.length
+                ? new MediaStream([].concat(canvasStream.getVideoTracks(), audioTracks))
+                : canvasStream;
             try {
                 liveVideoRecorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 5000000 });
             } catch (e) {
@@ -3828,8 +3036,6 @@
                 mobShutter.classList.remove('recording');
                 liveRecordCanvas = null;
                 liveRecordCtx = null;
-                liveRecordInnerCanvas = null;
-                liveRecordInnerCtx = null;
                 if (recordedChunks.length === 0) return;
                 var rec = liveVideoRecorder;
                 var mimeType = rec.mimeType || 'video/webm';
@@ -3839,35 +3045,16 @@
                 openVideoExportPreview(blob, fileName, mimeType);
                 liveVideoRecorder = null;
             };
-            function downloadVideoFile(blob, fileName) {
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement('a');
-                a.href = url;
-                a.download = fileName;
-                a.click();
-                setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-            }
             liveVideoRecorder.start(1000 / LIVE_RECORD_FPS);
             liveRecordInterval = setInterval(function () {
                 if (liveRecordCanvas && liveRecordCtx && liveVideoRecorder && liveVideoRecorder.state === 'recording') {
-                    // redraw inner mosaic
-                    if (liveRecordInnerCanvas && liveRecordInnerCtx) {
-                        drawGridToContext(liveRecordInnerCtx, liveRecordInnerCanvas.width, liveRecordInnerCanvas.height);
-                        // composite framed card (outer) using the current inner mosaic
-                        const tmp = makeFramedCanvas(liveRecordInnerCanvas, { title: 'Pixel Art Maker', credit: '© shaked kletter' });
-                        // tmp size may differ slightly due to rounding; fit into record canvas
-                        liveRecordCtx.imageSmoothingEnabled = true;
-                        liveRecordCtx.clearRect(0, 0, liveRecordCanvas.width, liveRecordCanvas.height);
-                        liveRecordCtx.drawImage(tmp, 0, 0, liveRecordCanvas.width, liveRecordCanvas.height);
-                    } else {
-                        drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
-                    }
+                    drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
                 }
             }, 1000 / LIVE_RECORD_FPS);
             mobShutter.classList.add('recording');
         }
 
-        // Shutter: in live mode → snapshot (image) or start/stop video; in draw mode → no-op
+        // Shutter: in live mode → snapshot (image) or start/stop video; only visible in Live
         if (mobShutter) mobShutter.addEventListener('click', () => {
             if (state.mode === 'live') {
                 if (state.captureMode === 'video') {
@@ -3891,8 +3078,7 @@
                         ctx.fillRect(0, 0, dim.w, dim.h);
                         drawGridToContext(ctx, dim.w, dim.h);
                     }
-                    const framed = makeFramedCanvas(cnv, { title: 'Pixel Art Maker', credit: '© shaked kletter' });
-                    openExportPreview(framed, 'pixel_art_maker_capture_' + Date.now() + '.png');
+                    openExportPreview(cnv, 'pixel_art_maker_capture_' + Date.now() + '.png');
                     // Stay in Live after capture (don't stop camera / don't switch modes)
                 }
             }
@@ -3903,61 +3089,10 @@
 
 
         // ═══════════════════════════════════════════════════
-        //  TOUCH SUPPORT (paint on canvas)
-        // ═══════════════════════════════════════════════════
-        function touchToMouse(touch) {
-            // Construct a minimal mouse-like event object from a touch
-            return { clientX: touch.clientX, clientY: touch.clientY, button: 0 };
-        }
-
-        gridCanvas.addEventListener('touchstart', e => {
-            if (state.mode !== 'draw') return;
-            e.preventDefault();
-            const me = touchToMouse(e.touches[0]);
-            const rc = hitCell(me);
-            if (!rc) return;
-            pushUndo();
-            state.erasing = false;
-            paintBrush(rc);
-            state.painting = true;
-            renderGrid();
-        }, { passive: false });
-
-        gridCanvas.addEventListener('touchmove', e => {
-            if (state.mode !== 'draw') return;
-            e.preventDefault();
-            const me = touchToMouse(e.touches[0]);
-            const rc = hitCell(me);
-            const nr = rc?.row ?? -1, nc = rc?.col ?? -1;
-            if (nr !== state.hoverR || nc !== state.hoverC) {
-                state.hoverR = nr; state.hoverC = nc;
-                if (state.painting && rc) paintBrush(rc);
-                renderGrid();
-            }
-        }, { passive: false });
-
-        gridCanvas.addEventListener('touchend', e => {
-            e.preventDefault();
-            state.painting = false;
-            state.hoverR = -1; state.hoverC = -1;
-            renderGrid();
-        }, { passive: false });
-
-        // ═══════════════════════════════════════════════════
         //  INIT
         // ═══════════════════════════════════════════════════
-        gridCanvas.style.cursor = 'crosshair';
-        renderGrid();
+        switchToMode('live');
         if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
-
-        // Palette UI wiring (Draw only: pick paint color)
-        function wireDrawPalette() {
-            renderPaletteGrid('draw-palette', (hex) => {
-                state.fillCol = hex;
-                renderGrid();
-            });
-        }
-        wireDrawPalette();
 
         function syncPresetButtons() {
             const el = document.getElementById('palette-presets');
@@ -3981,19 +3116,39 @@
                 if (!btn) return;
                 const key = btn.dataset.preset;
                 setActivePalettePreset(key);
-                // choose default paint color = palette dark
+                // choose default cell color = palette dark
                 state.fillCol = getPaletteDarkLight().dark;
-                wireDrawPalette();
                 if (state.mode === 'image' && state.srcImage) applyImage(); else renderGrid();
                 syncPresetButtons();
             });
         }
 
-        // Palette presets: build buttons from available presets, then hydrate from PNGs if present
+        // Palette presets: the built-in ones render immediately; palette_list/manifest.json
+        // (generated by palette_list/build_manifest.py from whatever PNGs are in that folder)
+        // is fetched after and merged in — so that folder is the single source of truth for
+        // which extra palettes show up, with no code changes needed to add or remove one.
         renderPresetBar();
         bindPresetBar('palette-presets');
         syncPresetButtons();
-        // Palettes are embedded; no async hydration needed.
+
+        async function loadFolderPalettes() {
+            try {
+                const res = await fetch('palette_list/manifest.json', { cache: 'no-store' });
+                if (!res.ok) return;
+                const entries = await res.json();
+                if (!Array.isArray(entries)) return;
+                entries.forEach((e) => {
+                    if (!e || !e.key || !Array.isArray(e.colors) || e.colors.length < 2) return;
+                    PALETTE_PRESETS[e.key] = e.colors;
+                    PALETTE_LABELS[e.key] = e.label || e.key;
+                });
+                renderPresetBar();
+                syncPresetButtons();
+            } catch (_) {
+                // Offline, blocked fetch, or opened via file:// — keep just the built-in palettes.
+            }
+        }
+        loadFolderPalettes();
 
         // PWA: register service worker for installability + reliable updates
         (function () {

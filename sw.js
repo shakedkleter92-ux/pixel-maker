@@ -1,11 +1,11 @@
 // Minimal service worker so the app can be installed (PWA)
-const CACHE = 'pixel-maker-v45';
+const CACHE = 'pixel-maker-v55';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE).then((cache) => {
       // Use relative URLs so this works on GitHub Pages subpaths too
-      return cache.addAll(['./', './index.html', './manifest.json']);
+      return cache.addAll(['./', './index.html', './frame.html', './manifest.json']);
     }).then(() => self.skipWaiting())
   );
 });
@@ -49,10 +49,10 @@ self.addEventListener('fetch', (e) => {
       fetch(req, { cache: 'no-store' })
         .then((res) => {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('./index.html', copy)).catch(() => {});
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
           return res;
         })
-        .catch(() => caches.match('./index.html'))
+        .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')))
     );
     return;
   }
