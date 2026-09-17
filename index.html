@@ -1891,13 +1891,15 @@
         function isDesktopLayout() { return getLayoutMode() === 'desktop'; }
 
         // Live camera "preview fill" mode by breakpoint.
-        // - mobile: fill screen (like camera apps) -> cover
+        // - mobile back camera: fill screen (like camera apps) -> cover
         // - tablet: fill screen -> cover
-        // - desktop: reduce perceived zoom -> contain
+        // - desktop, and the front/selfie camera on any breakpoint: keep the full frame
+        //   visible -> contain. A selfie lens' native FOV is much wider than our tall 9:16
+        //   target, so cropping it to "cover" made 1x look unnaturally zoomed in on a face,
+        //   with no way to back out since zoom only ever narrows the frame further from there.
         function getLiveScaleMode() {
-            // Camera-app behavior: mobile/tablet fill the frame (cover),
-            // desktop keeps full frame visible (contain).
             if (isDesktopLayout()) return 'contain';
+            if (liveState.facingMode === 'user') return 'contain';
             return 'cover';
         }
 
@@ -3473,6 +3475,10 @@
             state.captureMode = (mode === 'video') ? 'video' : 'image';
             if (mobShutter) mobShutter.classList.toggle('mode-video', state.captureMode === 'video');
             updateModeRowActive();
+            // Defensive: Photo and Video share one zoom-presets row (there's only one
+            // camera stream underneath both), but re-render on every switch so it can
+            // never be caught showing a stale set from before capabilities were ready.
+            if (typeof renderZoomPresets === 'function') renderZoomPresets();
         }
         if (mobCaptureModeBtn) mobCaptureModeBtn.addEventListener('click', function (e) {
             const btn = e.target.closest('.mob-mode-label');
@@ -3949,7 +3955,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v62';
+            const __BUILD = 'v63';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -3983,7 +3989,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=62';
+            const __SW_URL = 'sw.js?v=63';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

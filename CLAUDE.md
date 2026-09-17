@@ -95,6 +95,15 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   On hardware with no separate ultra-wide input (most laptops, some Android phones), tapping
   `.5×` just falls back to the closest digital zoom the device actually has — never a crash or
   dead end.
+  **`getLiveScaleMode()`** (how the camera frame is cropped into the target 9:16 grid, inside
+  `sampleLiveFrame()` — a different "cover" than the screen-fit one above) returns `'contain'`
+  (full native FOV, no crop) for desktop **and now also for the front/selfie camera on
+  mobile**, `'cover'` (fill + crop) only for the mobile back camera. A selfie lens' native FOV
+  is much wider than the tall portrait target, so cropping it to cover made 1x look
+  unnaturally zoomed in on a face with no way back out (zoom only ever narrows the frame
+  further); it shipped as unconditional `'cover'` on mobile once and was reported as too
+  tight on the front camera specifically — don't revert it to depend only on
+  `isDesktopLayout()`.
   **Capture mode** is one 3-way row (`#mob-capture-mode`: Video / Photo / Upload, each a
   `.mob-mode-label`) that doubles as the app's *only* mode switcher now — tapping "Upload" calls
   `switchToMode('image')`, tapping Video/Photo calls `switchToMode('live')` (if needed) then
@@ -239,7 +248,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v62`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v63`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.
