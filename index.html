@@ -630,7 +630,7 @@
         #mob-rec-timer {
             display: none;
             position: fixed;
-            top: 46px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 130;
@@ -656,25 +656,46 @@
         }
 
         /* ───── Mobile top bar & panel toggle ───── */
-        /* This used to sit at the bottom; it's the top bar now, and the panel opens
-           downward beneath it instead of upward from the bottom. */
+        /* This used to be a full-width bar (before that, at the bottom); it's now just a
+           square FAB, same size/treatment as the other floating buttons, floating over the
+           canvas instead of reserving its own strip of screen. The panel it opens still
+           slides down from the very top of the screen, so this sits ABOVE it in z-index
+           (higher than the open panel's 200) to stay visible/clickable for closing it again. */
         #panel-toggle-bar {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 36px;
-            background: rgba(243, 244, 246, 0.55);
+            width: 40px;
+            height: 40px;
+            top: 20px;
+            left: 20px;
+            border: none;
             border-radius: 0;
-            z-index: 110;
+            background: var(--fab-bg);
+            z-index: 210;
             align-items: center;
-            justify-content: flex-start;
-            padding: 0 16px;
+            justify-content: center;
             cursor: pointer;
             font-size: 16px;
             color: var(--muted);
-            transition: background .1s;
+            transition: background .12s, transform .12s;
+        }
+
+        /* Upload's backdrop is the plain white canvas, not a camera feed — same reasoning
+           as the other FABs in the shared block below, repeated here since this rule needs
+           to stay self-contained for its z-index override to reliably win the cascade. */
+        body.mode-upload #panel-toggle-bar {
+            background: var(--panel);
+        }
+
+        body.mode-upload #panel-toggle-bar:active {
+            background: var(--surface);
+        }
+
+        @media (hover: hover) {
+
+            body.mode-upload #panel-toggle-bar:hover {
+                background: var(--surface);
+            }
         }
 
         #panel-toggle-bar.active {
@@ -1027,12 +1048,12 @@
                 box-sizing: border-box;
             }
 
-            /* Canvas area fills the whole screen below the top bar (no white margins;
-               nothing is reserved at the bottom anymore — every other control there is a
+            /* Canvas area fills the whole screen (no white margins; nothing is reserved at
+               top or bottom anymore — every control, including the menu toggle, is a
                floating overlay, not part of layout flow) */
             #main {
                 position: fixed;
-                top: 36px;
+                top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
@@ -1048,10 +1069,12 @@
                 height: 100%;
             }
 
-            /* Panel becomes a sliding drawer from the top, right below the toggle bar */
+            /* Panel becomes a sliding drawer from the very top of the screen — the toggle
+               button that opens it is a floating overlay above it (z-index 210 > 200), not a
+               bar reserving its own space, so the panel itself starts flush at the top. */
             #panel {
                 position: fixed;
-                top: 36px;
+                top: 0;
                 left: 0;
                 right: 0;
                 width: 100%;
@@ -1066,6 +1089,9 @@
             #panel.panel-open {
                 max-height: 40vh;
                 overflow-y: auto;
+                /* Clears the floating menu toggle (top:20px, 40px tall) sitting on top of
+                   the panel at z-index 210, so its first section's text isn't covered. */
+                padding-top: 68px;
                 /* Always sit above every floating control (mode header, shutter, zoom, etc.) */
                 z-index: 200;
                 /* Frosted glass panel (readable over Live) */
@@ -1092,7 +1118,7 @@
             #panel.panel-open::before {
                 content: '';
                 position: fixed;
-                top: 36px;
+                top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
@@ -3999,7 +4025,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v67';
+            const __BUILD = 'v68';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4033,7 +4059,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=67';
+            const __SW_URL = 'sw.js?v=68';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

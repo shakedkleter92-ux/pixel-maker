@@ -165,18 +165,24 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   being viewed. Deleting anywhere must `URL.revokeObjectURL()` — don't just splice the array.
   `openExportPreview`/`openVideoExportPreview` (EXPORT PREVIEW section) are still used elsewhere
   (Upload's Download button) — don't delete them thinking they're dead.
-- **3136 / 3234 MOBILE** — drawer panel and camera buttons. `#panel-toggle-bar` is the **top**
-  bar now (it used to be the bottom bar) — the panel opens *downward* from beneath it, not
-  upward from the bottom; it's a slim `height: 36px` (sized to its 10px label, not the tall
-  68px bar it started as) with `#main`'s `top: 36px; bottom: 0`, the panel-open scrim's
-  `top: 36px`, and `#mob-rec-timer`'s `top: 46px` all assuming that height — change all four
-  together if it's resized again. The bar itself is just a hamburger icon (`#panel-toggle-icon`,
-  a plain `☰` span) left-aligned (`justify-content: flex-start`) — there's no "Pixelart Maker"
-  title text anymore, and no separate `<button>` inside it; the whole bar is the click target
-  (`panelToggleBar.addEventListener('click', ...)`), same as before. Idle background is a
-  translucent `rgba(243, 244, 246, 0.55)`, not the solid `--panel` used elsewhere — it flips to
-  solid `--text` (black) via `.active` while the panel is open, same as before. There is no
-  separate top mode-header anymore
+- **3136 / 3234 MOBILE** — drawer panel and camera buttons. `#panel-toggle-bar` opens the panel
+  — it went from a bottom bar, to a full-width top bar, to its current form: a `40×40` square
+  FAB (`#panel-toggle-icon`, a plain `☰` span, no title text and no separate `<button>` inside
+  it — the whole square is still the click target) floating at `top: 20px; left: 20px`, same
+  size/treatment as the other buttons everywhere. It does **not** reserve any layout space —
+  `#main`, `#panel`, and the panel-open scrim (`#panel.panel-open::before`) all sit at `top: 0`
+  now, and the toggle floats over the canvas like any other FAB. Because the panel needs to
+  start flush at the top, the toggle sits at `z-index: 210` — **above** the open panel's
+  `z-index: 200` — so it stays visible/clickable to close the panel again instead of being
+  covered by it; `#panel.panel-open` also carries `padding-top: 68px` so its first section's
+  text doesn't render underneath the floating square. Idle background matches the other FABs'
+  `body.mode-upload` pattern (translucent `--fab-bg` in Live, solid `--panel` in Upload) — kept
+  as its own self-contained rule rather than joining the shared FAB selector list, specifically
+  so this `z-index: 210` override reliably wins the cascade over the shared block's `z-index:
+  85`. It still flips to solid `--text` (black) via `.active` while the panel is open, same as
+  before. `#mob-rec-timer` moved from `top: 46px` (which assumed the old 36px-tall bar) to
+  `top: 20px` (aligned with the toggle's own top offset, now that nothing reserves space up
+  there). There is no separate top mode-header anymore
   (`#mob-mode-header` / `.mob-fm-btn` / `#mob-fm-image` / `#mob-fm-live` were removed along with
   it) — Upload/Live switching lives entirely in the Video/Photo/Upload row described above. The
   panel (`#panel.panel-open`) is `z-index: 200`, but **opening it no longer hides the bottom
@@ -287,7 +293,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v67`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v68`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.
