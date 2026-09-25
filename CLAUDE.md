@@ -117,6 +117,26 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   a real camera app's 1x stays at full native FOV. The back camera keeps requesting the narrow
   aspect — its much higher native resolution means that crop still keeps plenty of real detail,
   and it wasn't the one reported as too tight.
+  **Which camera is "front"/"user" by default is decided by camera *count*, not viewport
+  width.** `isMobileLayout()` is a `window.innerWidth` check — it's `true` for *every* visitor
+  because of the phone-only redirect, laptops included, so it can't be used to tell an actual
+  phone (front + back camera) apart from a single-webcam desktop. `hasMultipleCameras()`
+  (caches its result) counts `enumerateDevices()`'s `videoinput` entries instead — that count
+  is reliable even before permission is granted, only the labels are hidden. `startCamera()`'s
+  one-time mobile default now reads: 2+ cameras → `'environment'` (an actual phone, defaults to
+  the back one like a real camera app); exactly 1 → `'user'` (a laptop only has its own
+  webcam — defaulting it to `'environment'` used to silently fall back to that same webcam
+  anyway, but still take the back-camera's narrow pre-crop code path above, reproducing the
+  exact "unnaturally zoomed in" bug on desktop that was just fixed for phone selfies).
+  **`isMobileDevice()`** (UA sniffing: `Android|iPhone|iPad|iPod|Mobile|Windows Phone`) is the
+  other place this distinction matters — it gates the manual-rotation correction in
+  `sampleLiveFrame()` (`needsRotate`), since that correction only makes sense for a phone whose
+  camera sensor is fixed relative to a device that itself can be held in different
+  orientations. A desktop webcam delivering a landscape buffer isn't a rotation problem, it's
+  just the camera's native shape (the existing cover-crop already handles fitting it into the
+  9:16 target) — without this gate, `needsRotate` would fire for any non-iOS desktop browser
+  too and spin a normal laptop feed sideways. Don't fold `isMobileDevice()` into
+  `isMobileLayout()` or vice versa; they answer different questions and both are needed.
   **Capture mode** is one 3-way row (`#mob-capture-mode`: Video / Photo / Upload, each a
   `.mob-mode-label`) that doubles as the app's *only* mode switcher now — tapping "Upload" calls
   `switchToMode('image')`, tapping Video/Photo calls `switchToMode('live')` (if needed) then
@@ -150,7 +170,13 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   upward from the bottom; it's a slim `height: 36px` (sized to its 10px label, not the tall
   68px bar it started as) with `#main`'s `top: 36px; bottom: 0`, the panel-open scrim's
   `top: 36px`, and `#mob-rec-timer`'s `top: 46px` all assuming that height — change all four
-  together if it's resized again. There is no separate top mode-header anymore
+  together if it's resized again. The bar itself is just a hamburger icon (`#panel-toggle-icon`,
+  a plain `☰` span) left-aligned (`justify-content: flex-start`) — there's no "Pixelart Maker"
+  title text anymore, and no separate `<button>` inside it; the whole bar is the click target
+  (`panelToggleBar.addEventListener('click', ...)`), same as before. Idle background is a
+  translucent `rgba(243, 244, 246, 0.55)`, not the solid `--panel` used elsewhere — it flips to
+  solid `--text` (black) via `.active` while the panel is open, same as before. There is no
+  separate top mode-header anymore
   (`#mob-mode-header` / `.mob-fm-btn` / `#mob-fm-image` / `#mob-fm-live` were removed along with
   it) — Upload/Live switching lives entirely in the Video/Photo/Upload row described above. The
   panel (`#panel.panel-open`) is `z-index: 200`, but **opening it no longer hides the bottom
@@ -261,7 +287,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v66`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v67`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.

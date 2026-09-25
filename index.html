@@ -665,18 +665,14 @@
             left: 0;
             right: 0;
             height: 36px;
-            background: var(--panel);
+            background: rgba(243, 244, 246, 0.55);
             border-radius: 0;
             z-index: 110;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             padding: 0 16px;
             cursor: pointer;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: .14em;
-            text-transform: uppercase;
-            font-family: 'IBM Plex Mono', monospace;
+            font-size: 16px;
             color: var(--muted);
             transition: background .1s;
         }
@@ -686,18 +682,8 @@
             color: var(--bg);
         }
 
-        #panel-toggle-bar.active span,
-        #panel-toggle-bar.active button {
+        #panel-toggle-bar.active #panel-toggle-icon {
             color: var(--bg);
-        }
-
-        #panel-toggle-bar span {
-            flex: 1;
-            text-align: center;
-        }
-
-        #panel-toggle-btn {
-            display: none
         }
 
         /* Gallery: full-screen, same light theme as the rest of the app (white background,
@@ -1667,9 +1653,8 @@
     <!-- Recording timer — shown only while actively recording video -->
     <div id="mob-rec-timer" aria-hidden="true">00:00</div>
     <!-- Mobile bottom bar -->
-    <div id="panel-toggle-bar">
-        <span>Pixelart Maker</span>
-        <button id="panel-toggle-btn" aria-label="Toggle controls">☰</button>
+    <div id="panel-toggle-bar" aria-label="Toggle controls">
+        <span id="panel-toggle-icon" aria-hidden="true">☰</span>
     </div>
 
     <!-- Mobile camera controls -->
@@ -1760,8 +1745,8 @@
             <div class="section">
                 <div class="slider-row">
                     <span class="sec-label"><span class="sec-num">01</span> Resolution</span>
-                    <input type="range" id="g-res" min="8" max="300" value="250" />
-                    <span class="sl-val" id="g-res-v">250</span>
+                    <input type="range" id="g-res" min="8" max="300" value="300" />
+                    <span class="sl-val" id="g-res-v">300</span>
                 </div>
             </div>
 
@@ -1856,7 +1841,7 @@
             cells: [],
             mode: 'live',
             // image mode
-            srcImage: null, imgRes: 250, imgBg: '#ffffff', imgStrokeCol: '#000000', imgFillCol: '#000000',
+            srcImage: null, imgRes: 300, imgBg: '#ffffff', imgStrokeCol: '#000000', imgFillCol: '#000000',
             imgThreshold: 128, imgBgCut: 220, imgFillCol2: '#ffffff', imgEdge: 0,
             useImageColors: true,
             imageManualGrid: false,
@@ -2620,7 +2605,7 @@
 
         const liveState = {
             stream: null, rafId: null,
-            res: 250, threshold: 132, bgCut: 255, edge: 10,
+            res: 300, threshold: 132, bgCut: 255, edge: 10,
             fillCol: '#000000', fillCol2: '#888888', strokeCol: '#000000', bgCol: '#ffffff',
             mirror: true,
             bgPixels: null, bgCols: 0, bgRows: 0, bgDiff: 30,
@@ -2946,6 +2931,31 @@
             return /iPad|iPhone|iPod/i.test(navigator.userAgent || '');
         }
 
+        // True mobile devices — phones/tablets — vs. everything else (desktop/laptop).
+        // Distinct from isMobileLayout(), which just checks viewport width and is true for
+        // every visitor here because of the phone-only redirect; this checks the actual UA.
+        function isMobileDevice() {
+            return /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(navigator.userAgent || '');
+        }
+
+        // Distinguishes an actual phone (front + back camera, at least 2 video inputs) from
+        // a single-webcam device (laptop/desktop) — used to pick a sane default facing mode,
+        // since isMobileLayout() can't tell them apart (see startCamera()). Device labels
+        // aren't available before permission is granted, but the *count* of video inputs
+        // reliably is on every mainstream browser, so this works even on first load before
+        // the user has said yes to the camera prompt.
+        let __hasMultipleCamerasCache = null;
+        async function hasMultipleCameras() {
+            if (__hasMultipleCamerasCache !== null) return __hasMultipleCamerasCache;
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                __hasMultipleCamerasCache = devices.filter((d) => d.kind === 'videoinput').length > 1;
+            } catch (_) {
+                __hasMultipleCamerasCache = null; // unknown — caller decides the fallback
+            }
+            return __hasMultipleCamerasCache;
+        }
+
         function getScreenOrientationAngle() {
             // Prefer Screen Orientation API, fall back to legacy iOS window.orientation
             try {
@@ -3092,8 +3102,12 @@
             const wantPortraitUI = (targetRatio < 1) && (window.innerHeight >= window.innerWidth);
             // Any iOS browser (not just Safari — they all share the same WebKit engine)
             // already applies rotation metadata when drawing the <video> element to canvas.
-            // Rotating again causes a 90° sideways preview.
-            const needsRotate = !isIOSWebKit() && wantPortraitUI && (vw > vh);
+            // Rotating again causes a 90° sideways preview. And this correction only makes
+            // sense on an actual phone/tablet in the first place — a landscape buffer from a
+            // fixed desktop webcam isn't a rotation problem, it's just the camera's native
+            // shape, and manually "rotating" it would turn a normal laptop feed sideways.
+            // isMobileLayout() can't distinguish that (see startCamera()), so check the UA.
+            const needsRotate = isMobileDevice() && !isIOSWebKit() && wantPortraitUI && (vw > vh);
             let srcEl = liveVideo;
             let sw = vw, sh = vh;
             if (needsRotate) {
@@ -3188,10 +3202,20 @@
 
         async function startCamera() {
             try {
-                // Mobile defaults (apply once, don't override user flip/zoom)
+                // Mobile defaults (apply once, don't override user flip/zoom).
+                // isMobileLayout() is a viewport-width check, not a device check — the
+                // phone-only redirect means it's true for EVERY visitor, desktop laptops
+                // included (they're always seeing the app through the narrow phone-frame
+                // iframe). A laptop only has one, front-facing webcam, so defaulting it to
+                // 'environment' would silently fall back to that single camera anyway, but
+                // still take the back-camera code path in getLiveVideoConstraints() — the
+                // same narrow pre-crop that made phone selfies look unnaturally zoomed in.
+                // hasMultipleCameras() distinguishes an actual phone (2+ cameras) from a
+                // single-webcam device before deciding which default to use.
                 if (isMobileLayout() && !liveState.userSetFacing && !liveState.didSetMobileFacingDefault) {
-                    liveState.facingMode = 'environment';
-                    liveState.mirror = false;
+                    const multi = await hasMultipleCameras();
+                    liveState.facingMode = (multi === false) ? 'user' : 'environment';
+                    liveState.mirror = (liveState.facingMode === 'user');
                     liveState.didSetMobileFacingDefault = true;
                 }
                 if (isMobileLayout() && !liveState.didSetMobileZoomDefault) {
@@ -3975,7 +3999,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v66';
+            const __BUILD = 'v67';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4009,7 +4033,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=66';
+            const __SW_URL = 'sw.js?v=67';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
