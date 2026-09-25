@@ -2935,14 +2935,15 @@
             closePop();
         }
 
-        function isIOSSafari() {
-            const ua = navigator.userAgent || '';
-            const isIOS = /iPad|iPhone|iPod/i.test(ua);
-            const isWebKit = /WebKit/i.test(ua);
-            const isCriOS = /CriOS/i.test(ua);
-            const isFxiOS = /FxiOS/i.test(ua);
-            const isSafari = isWebKit && /Safari/i.test(ua) && !isCriOS && !isFxiOS;
-            return isIOS && isSafari;
+        // Every browser on iOS (Chrome/CriOS, Firefox/FxiOS, Edge, etc.) is required by Apple
+        // to run on the same underlying WebKit engine as Safari, so they all auto-apply the
+        // camera frame's rotation metadata the same way Safari does. A previous version of
+        // this check only matched actual Safari (excluded CriOS/FxiOS) — on someone else's
+        // iPhone using Chrome, that came back false, so sampleLiveFrame() rotated a frame
+        // WebKit had already auto-oriented, landing 90° off despite working fine on an
+        // iPhone running Safari itself.
+        function isIOSWebKit() {
+            return /iPad|iPhone|iPod/i.test(navigator.userAgent || '');
         }
 
         function getScreenOrientationAngle() {
@@ -3089,9 +3090,10 @@
             // Always "contain": show the full camera frame (no crop) inside the target frame.
             // If iOS delivers a landscape buffer while UI is portrait, rotate for sampling.
             const wantPortraitUI = (targetRatio < 1) && (window.innerHeight >= window.innerWidth);
-            // iOS Safari already applies rotation metadata when drawing the <video> element to canvas.
+            // Any iOS browser (not just Safari — they all share the same WebKit engine)
+            // already applies rotation metadata when drawing the <video> element to canvas.
             // Rotating again causes a 90° sideways preview.
-            const needsRotate = !isIOSSafari() && wantPortraitUI && (vw > vh);
+            const needsRotate = !isIOSWebKit() && wantPortraitUI && (vw > vh);
             let srcEl = liveVideo;
             let sw = vw, sh = vh;
             if (needsRotate) {
@@ -3973,7 +3975,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v65';
+            const __BUILD = 'v66';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4007,7 +4009,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=65';
+            const __SW_URL = 'sw.js?v=66';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

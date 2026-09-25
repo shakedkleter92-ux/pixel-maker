@@ -261,7 +261,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v65`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v66`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.
@@ -289,7 +289,11 @@ a folder's contents on its own. The mechanism:
   normal use, because of the phone-only redirect above. Don't spend effort fixing
   tablet/desktop-only bugs unless asked; do keep the mobile path working.
 - **iOS quirks are deliberate.** The explicit text-color overrides on buttons exist because
-  iOS tints them blue; the `-webkit` bits and `isIOSSafari()` branches are load-bearing.
+  iOS tints them blue; the `-webkit` bits and `isIOSWebKit()` branch (in `sampleLiveFrame()`,
+  LIVE CAMERA) are load-bearing. That check is *any browser on iOS*, not literally Safari —
+  it used to be Safari-only (excluded Chrome/Firefox-for-iOS), which rotated the camera frame
+  a second time on top of WebKit's own auto-rotation on someone else's iPhone using Chrome,
+  landing 90° off despite working fine in Safari itself. Don't narrow it back to Safari-only.
 - Hebrew appears in comments and docs. UI strings are English.
 
 ## Git
