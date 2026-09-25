@@ -2198,6 +2198,42 @@
             }
             return out;
         }
+
+        // ── Auto contrast stretch ───────────────────────────────────────────
+        // Both Upload and Live feed raw sampled RGB straight into nearestPaletteColorRGB()
+        // with no levels adjustment. A normally-exposed photo/camera frame packs most of its
+        // pixels into a narrow mid-to-bright luminance band (most real-world scenes and phone
+        // auto-exposure both skew that way) — matched against a small, fixed palette with no
+        // remapping, that band collapses onto just the palette's lighter entries, reading as
+        // "washed out"/overexposed with little tonal separation. This stretches the actual
+        // luminance range present in the current frame/image to fill 0–255 (a histogram-based
+        // 2nd/98th percentile stretch, not raw min/max, so a single stray bright or dark pixel
+        // can't skew it) before quantization, so the full palette gets used. Uses `lum`
+        // (already computed once per frame by edgeEnhanceLum — no extra pass over the pixels)
+        // purely to pick the stretch bounds; background-cutoff/threshold decisions elsewhere
+        // still use the original, unstretched luminance, so slider calibration doesn't shift.
+        function computeContrastStretch(lum, count) {
+            const hist = new Uint32Array(256);
+            for (let i = 0; i < count; i++) {
+                let v = lum[i] | 0;
+                if (v < 0) v = 0; else if (v > 255) v = 255;
+                hist[v]++;
+            }
+            const cut = count * 0.02;
+            let lo = 0, acc = 0;
+            for (; lo < 255; lo++) { acc += hist[lo]; if (acc >= cut) break; }
+            let hi = 255; acc = 0;
+            for (; hi > 0; hi--) { acc += hist[hi]; if (acc >= cut) break; }
+            if (hi - lo < 20) return null; // near-flat image — stretching would just amplify noise
+            return { lo, hi };
+        }
+
+        function stretchChannel(val, lo, hi) {
+            if (val <= lo) return 0;
+            if (val >= hi) return 255;
+            return (val - lo) * 255 / (hi - lo);
+        }
+
         function rgbToHex(r, g, b) {
             return '#' + [r, g, b].map(x => {
                 const h = Math.max(0, Math.min(255, Math.round(x))).toString(16);
@@ -2332,6 +2368,7 @@
             const bgCut = state.imgBgCut;
             const px = sampleImg(src, imgCols, imgRows);
             const lum = edgeEnhanceLum(px, imgCols, imgRows, state.imgEdge);
+            const stretch = computeContrastStretch(lum, imgCols * imgRows);
             state.cells = Array.from({ length: imgRows }, (_, r) =>
                 Array.from({ length: imgCols }, (_, c) => {
                     const i = r * imgCols + c;
@@ -2341,7 +2378,12 @@
                     // Optional background cutoff (high luminance -> background)
                     if (l >= bgCut) return null;
 
-                    const R = px[i * 4 + 0], G = px[i * 4 + 1], B = px[i * 4 + 2];
+                    let R = px[i * 4 + 0], G = px[i * 4 + 1], B = px[i * 4 + 2];
+                    if (stretch) {
+                        R = stretchChannel(R, stretch.lo, stretch.hi);
+                        G = stretchChannel(G, stretch.lo, stretch.hi);
+                        B = stretchChannel(B, stretch.lo, stretch.hi);
+                    }
                     // Main behavior (Upload/Image): map to FULL active palette (nearest color)
                     if (state.useImageColors) return nearestPaletteColorRGB(R, G, B);
 
@@ -3196,25 +3238,35 @@
                 const useSilhouette = bgPx !== null && bgCols === cols && bgRows === rows;
 
                 const lum = edgeEnhanceLum(px, cols, rows, liveState.edge);
+                const stretch = computeContrastStretch(lum, cols * rows);
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
                         const idx = r * cols + c;
                         const l = lum[idx];
                         const i = idx * 4;
-                        const R = px[i], G = px[i + 1], B = px[i + 2];
+                        let R = px[i], G = px[i + 1], B = px[i + 2];
                         if (useSilhouette) {
-                            // Background subtraction: is this pixel foreground?
+                            // Background subtraction: is this pixel foreground? (compared
+                            // against the raw, unstretched frame — the stretch below is only
+                            // for the color fed into the palette match)
                             const dr = Math.abs(px[i] - bgPx[i]);
                             const dg = Math.abs(px[i + 1] - bgPx[i + 1]);
                             const db = Math.abs(px[i + 2] - bgPx[i + 2]);
                             const diff = (dr + dg + db) / 3;
                             if (diff <= liveState.bgDiff) { state.cells[r][c] = null; }
-                            else { state.cells[r][c] = nearestPaletteColorRGB(R, G, B); }
+                            else {
+                                if (stretch) { R = stretchChannel(R, stretch.lo, stretch.hi); G = stretchChannel(G, stretch.lo, stretch.hi); B = stretchChannel(B, stretch.lo, stretch.hi); }
+                                state.cells[r][c] = nearestPaletteColorRGB(R, G, B);
+                            }
                         } else {
                             const alpha = px[i + 3];
-                            // Pixels brighter than BG Cutoff → background (null)
+                            // Pixels brighter than BG Cutoff → background (null; decided on the
+                            // original, unstretched luminance so the slider stays calibrated)
                             if (alpha <= 30 || l >= liveState.bgCut) { state.cells[r][c] = null; }
-                            else { state.cells[r][c] = nearestPaletteColorRGB(R, G, B); }
+                            else {
+                                if (stretch) { R = stretchChannel(R, stretch.lo, stretch.hi); G = stretchChannel(G, stretch.lo, stretch.hi); B = stretchChannel(B, stretch.lo, stretch.hi); }
+                                state.cells[r][c] = nearestPaletteColorRGB(R, G, B);
+                            }
                         }
                     }
                 }
@@ -4025,7 +4077,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v68';
+            const __BUILD = 'v69';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4059,7 +4111,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=68';
+            const __SW_URL = 'sw.js?v=69';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

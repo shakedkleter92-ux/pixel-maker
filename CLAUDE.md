@@ -64,6 +64,25 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   shows built-ins + whatever `palette_list/` currently has — see the "Live palette folder"
   section below. Never hand-edit that merge to add/remove a specific palette; add/remove the
   PNG and regenerate instead.
+  **`nearestPaletteColorRGB(r,g,b)`** is a plain nearest-neighbor match (squared RGB distance)
+  against `ACTIVE_PALETTE_RGB` — it has no levels/contrast adjustment of its own, so both
+  `applyImage()` (Upload) and `liveLoop()` (Live) run the sampled RGB through
+  **`computeContrastStretch(lum, count)`** + **`stretchChannel(val, lo, hi)`** first. Without
+  it, a normally-exposed photo or camera frame (most real scenes and phone auto-exposure both
+  pack the bulk of their pixels into a narrow mid-to-bright luminance band) collapses onto just
+  the palette's lighter entries when matched against a small fixed palette with no remapping —
+  confirmed on a test image where the *unstretched* match used only 2 of Pollen8's 8 colors for
+  98% of pixels (the darkest color, unused, at 0%), reading as flat/overexposed; the stretch
+  fixed that to a proper spread across 4 colors from darkest to near-lightest. It's a
+  histogram-based 2nd/98th-percentile stretch (built from the `lum` array `edgeEnhanceLum()`
+  already computed that frame — no extra pass over the pixels), not raw min/max, so one stray
+  bright or dark pixel can't skew the whole frame; returns `null` (skip stretching) if the
+  frame's actual range is under 20 (near-flat image, where stretching would just amplify
+  noise). Deliberately **not** used for the background-cutoff/threshold decisions
+  (`imgBgCut`/`liveState.bgCut`/`imgThreshold`) elsewhere in the same functions — those still
+  compare against the original, unstretched luminance, so those sliders' calibration doesn't
+  shift depending on what's in frame; the stretch only touches the RGB fed into the palette
+  match itself.
 - **2248 EXPORT / 2296 EXPORT PREVIEW** — `renderHiRes()`/preview-modal plumbing, still used by
   the panel's Download button (Upload mode) and by Live's Download FAB. Live's shutter/record
   no longer goes through here directly — see GALLERY below. Exports are plain — no title/date/
@@ -293,7 +312,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v68`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v69`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.
