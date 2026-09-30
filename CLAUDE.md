@@ -258,19 +258,28 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   `::-webkit-slider-thumb`/track styling entirely; tried that first, it looked completely
   inconsistent with the rest of the UI. Range raised from `max="300"` to `max="500"` (the
   default `value` is still `300` on load either way).
-- **3690 INIT** — defaults to Live mode on load (starts the camera immediately).
-  `playSplashThen(next)` plays a purely presentational splash (logo entrance animation, the
-  app name typed out character-by-character with a blinking caret, then a fade) before calling
-  `next()` — it holds no state of its own and is just a `setTimeout`/`setInterval` sequence, not
-  wired into `state`. It's only invoked as a prelude to the "Add to Home Screen" prompt
-  (`revealInstallPrompt`), under the exact same gating that prompt already used (mobile,
-  not standalone, no `pixelmaker-skip-install` session flag) — it does **not** play for
-  standalone/installed or desktop visitors, since they previously saw nothing extra at all and
-  that shouldn't change. Timing is hardcoded (650ms for the logo before typing starts, 70ms per
-  character, then a 300ms/500ms/500ms caret-off/pause/fade sequence) rather than derived from
-  the CSS animation durations — if `#splash-logo`'s `.6s` entrance animation or
-  `#splash-screen`'s `.5s` fade transition change, update the matching JS delays too so they
-  stay in sync.
+- **3690 INIT** — does **not** default into Live mode / start the camera directly anymore.
+  `playSplashThen(next)` plays a purely presentational splash (logo entrance animation, the app
+  name typed out character-by-character with a blinking caret, then a "Tap to continue" hint
+  fades in) and calls `next()` only once the user **taps the splash itself** — it never
+  auto-advances on a timer. It holds no state of its own (`setTimeout`/`setInterval` only, not
+  wired into `state`) and **always plays, every launch, standalone/installed included** — it
+  used to be gated the same way as the "Add to Home Screen" prompt (mobile, not standalone),
+  which meant a visitor using the installed home-screen icon never saw it at all and went
+  straight to the camera permission dialog with no preceding UI; don't reintroduce that gating
+  on *whether* it plays. What differs by visitor is only what `next` does:
+  `proceedPastSplash()` (in the install-prompt IIFE) reveals the "Add to Home Screen" screen
+  first (mobile, not standalone, no `pixelmaker-skip-install` session flag) or calls
+  **`initApp()`** directly otherwise. `initApp()` is what actually calls `switchToMode('live')`
+  (the thing that requests camera permission) — it's guarded by `appInitialized` and called
+  from three places: `proceedPastSplash()`, the install-prompt's `skipBtn` ("Continue to app"),
+  and its `installBtn`'s accepted-native-prompt branch. The point of all of this indirection is
+  that **the camera/install permission dialog should never appear before the user has seen and
+  acknowledged some app UI** — splash, and install-prompt if shown, always come first, gated on
+  an explicit tap. Splash timing is hardcoded (650ms for the logo before typing starts, 70ms per
+  character, 300ms caret-hold before the hint appears) rather than derived from the CSS
+  animation durations — if `#splash-logo`'s `.6s` entrance animation or `#splash-screen`'s `.5s`
+  fade transition change, update the matching JS delays too so they stay in sync.
 
 There is no Draw (freehand paint) mode — only **Upload** (image) and **Live** (camera). It was
 removed; don't reintroduce brush/undo/reference-image code without being asked. There is also no
@@ -363,7 +372,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v71`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v72`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.

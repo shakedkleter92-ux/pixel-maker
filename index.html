@@ -1765,6 +1765,22 @@
             }
         }
 
+        /* Only appears once typing is done — tapping anywhere on the splash (not just this
+           line) is what advances past it; this is just the hint that it's ready to. */
+        #splash-hint {
+            margin-top: 14px;
+            font-size: 9px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            opacity: 0;
+            transition: opacity .4s ease;
+        }
+
+        #splash-hint.show {
+            opacity: 1;
+        }
+
         /* מסך הזמנה להוספה למסך הבית (מובייל, בפתיחה מהקישור) */
         #install-prompt {
             display: none;
@@ -1832,6 +1848,7 @@
     <div id="splash-screen" aria-hidden="true">
         <img id="splash-logo" src="icon.svg" alt="" />
         <h1 id="splash-title"></h1>
+        <p id="splash-hint">Tap to continue</p>
     </div>
     <!-- Add to home screen prompt (shown on mobile when opening from link) -->
     <div id="install-prompt" aria-hidden="true">
@@ -4238,8 +4255,10 @@
         // ═══════════════════════════════════════════════════
         //  INIT
         // ═══════════════════════════════════════════════════
-        switchToMode('live');
-        if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
+        // Actual startup (switchToMode('live'), which is what requests camera permission)
+        // is deferred to initApp() — called once the splash screen, and if shown the "Add to
+        // Home Screen" prompt, have been dismissed. See playSplashThen()/initApp() near the
+        // bottom of this script.
 
         function syncPresetButtons() {
             const el = document.getElementById('palette-presets');
@@ -4300,7 +4319,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v71';
+            const __BUILD = 'v72';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4334,7 +4353,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=71';
+            const __SW_URL = 'sw.js?v=72';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -4402,7 +4421,7 @@
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
                     deferredPrompt.userChoice.then(function (r) {
-                        if (r.outcome === 'accepted') installEl.classList.remove('show');
+                        if (r.outcome === 'accepted') { installEl.classList.remove('show'); initApp(); }
                         deferredPrompt = null;
                     });
                 } else {
@@ -4412,6 +4431,7 @@
             if (skipBtn) skipBtn.addEventListener('click', function () {
                 installEl.classList.remove('show');
                 try { sessionStorage.setItem('pixelmaker-skip-install', '1'); } catch (_) { }
+                initApp();
             });
 
             function revealInstallPrompt() {
@@ -4420,22 +4440,53 @@
                 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) showManualHint();
             }
 
-            if (installEl && isMobile && !isStandalone) {
-                try {
-                    if (sessionStorage.getItem('pixelmaker-skip-install')) return;
-                } catch (_) { }
-                playSplashThen(revealInstallPrompt);
+            // The splash always plays first, camera/install permission requests included —
+            // it should never look like they're popping up out of nowhere before the app has
+            // shown any UI at all. What comes right after it depends on whether this visitor
+            // should still see the "Add to Home Screen" screen.
+            function proceedPastSplash() {
+                if (installEl && isMobile && !isStandalone) {
+                    try {
+                        if (sessionStorage.getItem('pixelmaker-skip-install')) { initApp(); return; }
+                    } catch (_) { }
+                    revealInstallPrompt();
+                    return;
+                }
+                initApp();
             }
+            playSplashThen(proceedPastSplash);
         })();
 
-        // Splash: logo entrance animation, then the app name typed out, then a fade into
-        // whatever comes next (the install prompt above). Purely presentational — no state,
-        // no persistence — so it's a plain function rather than something wired into `state`.
+        // Splash: logo entrance animation, then the app name typed out, then waits for a tap
+        // anywhere on it before fading into whatever comes next (the install prompt, or
+        // straight into the app for a standalone/already-decided visitor). Always plays,
+        // every launch, standalone/installed included — it used to be gated the same way as
+        // the install prompt, which meant a visitor using the installed home-screen icon
+        // never saw it at all, going straight to the camera permission dialog with no
+        // preceding UI. Tap-gated rather than auto-advancing so that whatever permission
+        // prompt follows (camera, or "Add to Home Screen") only ever appears after the user
+        // has acknowledged the app opening, never popping up out of nowhere on its own timer.
+        // Purely presentational — no state, no persistence — so it's a plain function rather
+        // than something wired into `state`.
         function playSplashThen(next) {
             const splash = document.getElementById('splash-screen');
             const title = document.getElementById('splash-title');
+            const hint = document.getElementById('splash-hint');
             if (!splash || !title) { next(); return; }
             const APP_NAME = 'Pixelart Maker';
+            let advanced = false;
+            function advance() {
+                if (advanced) return;
+                advanced = true;
+                splash.removeEventListener('click', advance);
+                splash.classList.add('fade-out');
+                setTimeout(() => {
+                    splash.classList.remove('show', 'fade-out');
+                    splash.setAttribute('aria-hidden', 'true');
+                    if (hint) hint.classList.remove('show');
+                    next();
+                }, 500); // matches the CSS opacity transition duration
+            }
             splash.setAttribute('aria-hidden', 'false');
             splash.classList.add('show');
             title.textContent = '';
@@ -4450,18 +4501,24 @@
                         clearInterval(typeInterval);
                         setTimeout(() => {
                             title.classList.remove('caret');
-                            setTimeout(() => {
-                                splash.classList.add('fade-out');
-                                setTimeout(() => {
-                                    splash.classList.remove('show', 'fade-out');
-                                    splash.setAttribute('aria-hidden', 'true');
-                                    next();
-                                }, 500); // matches the CSS opacity transition duration
-                            }, 500); // brief pause so the full name is readable before fading
+                            if (hint) hint.classList.add('show');
+                            splash.addEventListener('click', advance);
                         }, 300); // caret keeps blinking a beat after the last character
                     }
                 }, 70);
             }, 650);
+        }
+
+        // Wraps the app's real startup (defaulting into Live, which is what actually
+        // requests camera permission) — called only once the splash (and, if shown, the
+        // install prompt) has been dismissed, never automatically on page load, so the
+        // permission dialog always comes after some acknowledged UI rather than cold.
+        let appInitialized = false;
+        function initApp() {
+            if (appInitialized) return;
+            appInitialized = true;
+            switchToMode('live');
+            if (typeof updateMobileButtonsForMode === 'function') updateMobileButtonsForMode();
         }
     </script>
 </body>
