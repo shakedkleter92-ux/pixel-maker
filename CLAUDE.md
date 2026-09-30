@@ -169,6 +169,14 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   (top of screen) runs via `startRecTimer()`/`stopRecTimer()`, started/stopped in
   `toggleVideoRecording()` alongside those classes — keep all three in lockstep if you touch
   that function.
+  **Hardware volume buttons as a shutter trigger** is a `window` `keydown` listener (checks
+  `e.key === 'AudioVolumeUp'/'AudioVolumeDown'` and the legacy `keyCode` 24/25, only while
+  `state.mode === 'live'`) that just calls `mobShutter.click()` — best effort only. iOS Safari,
+  and every other iOS browser since they're all required to run on the same WebKit engine,
+  never exposes volume key presses to web content at all; this is a hard OS restriction, not
+  something fixable from here, so it will never work on an iPhone. Some Android browsers do
+  dispatch a keydown for it (undocumented, inconsistent across devices), so the listener is
+  there for whichever ones do — it's a no-op everywhere else, never a crash.
 - **3419 GALLERY** — in-memory only (cleared on reload, same as everything else — no
   IndexedDB/localStorage). The shutter (`addToGallery`) and the recorder's `onstop` no longer
   call `openExportPreview`/`openVideoExportPreview` directly for Live captures — they push into
@@ -176,13 +184,23 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   the latest capture as a live thumbnail (`updateGalleryFabThumb()`) instead of a generic icon,
   like a phone camera's roll shortcut. Tapping it opens `#gallery-screen`, a full-screen grid —
   **light theme, same as the rest of the app** (white bg, black = selected; don't reintroduce a
-  dark theme here, that was tried and explicitly reverted). Tapping a thumbnail's own
-  `.gallery-check` circle toggles multi-select (for the bottom bar's batch
-  `galleryDeleteBtn`/`galleryDownloadBtn`); tapping anywhere else on the thumbnail instead opens
-  `#gallery-viewer`, a full-screen single-item view (`openViewer(index)`) — swipe left/right
-  (`viewerStep()`) to move between captures, with its own Delete/Download for just the item
-  being viewed. Deleting anywhere must `URL.revokeObjectURL()` — don't just splice the array.
-  `openExportPreview`/`openVideoExportPreview` (EXPORT PREVIEW section) are still used elsewhere
+  dark theme here, that was tried and explicitly reverted). Multi-select is a distinct mode
+  (`let gallerySelectMode`, off by default), toggled by the header's `#gallery-select-toggle`
+  ("Select"/"Cancel") — **not** always-on. It used to be an always-visible tiny corner circle
+  on every thumbnail, but that was easy to miss with a finger and just opened the viewer
+  instead when tapped near it, reading as "selection doesn't work" even though the code was
+  firing correctly. Outside select mode, tapping anywhere on a thumbnail opens
+  `#gallery-viewer` (a full-screen single-item view — `openViewer(index)`, swipe left/right via
+  `viewerStep()`, its own Delete/Download for just the item being viewed), exactly like a
+  normal phone photo gallery. Turning select mode on (`#gallery-screen.select-mode`) makes the
+  *whole tile* the tap target for toggling selection instead, reveals the `.gallery-check`
+  circles (`display:none` otherwise), and shows `#gallery-actions` (batch
+  `galleryDeleteBtn`/`galleryDownloadBtn` — `display:none` outside select mode too, so there's
+  nothing to batch-act on when there's nothing selectable yet). Turning it back off, or
+  closing the gallery, clears every item's `.selected` — same "clean slate" idea as the rest of
+  the app not persisting state. Deleting anywhere must `URL.revokeObjectURL()` — don't just
+  splice the array. `openExportPreview`/`openVideoExportPreview` (EXPORT PREVIEW section) are
+  still used elsewhere
   (Upload's Download button) — don't delete them thinking they're dead.
 - **3136 / 3234 MOBILE** — drawer panel and camera buttons. `#panel-toggle-bar` opens the panel
   — it went from a bottom bar, to a full-width top bar, to its current form: a `40×40` square
@@ -223,6 +241,18 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   `updateModeRowActive()`) — Upload's backdrop is the plain white canvas, so white-on-white text
   would otherwise disappear.
 - **3690 INIT** — defaults to Live mode on load (starts the camera immediately).
+  `playSplashThen(next)` plays a purely presentational splash (logo entrance animation, the
+  app name typed out character-by-character with a blinking caret, then a fade) before calling
+  `next()` — it holds no state of its own and is just a `setTimeout`/`setInterval` sequence, not
+  wired into `state`. It's only invoked as a prelude to the "Add to Home Screen" prompt
+  (`revealInstallPrompt`), under the exact same gating that prompt already used (mobile,
+  not standalone, no `pixelmaker-skip-install` session flag) — it does **not** play for
+  standalone/installed or desktop visitors, since they previously saw nothing extra at all and
+  that shouldn't change. Timing is hardcoded (650ms for the logo before typing starts, 70ms per
+  character, then a 300ms/500ms/500ms caret-off/pause/fade sequence) rather than derived from
+  the CSS animation durations — if `#splash-logo`'s `.6s` entrance animation or
+  `#splash-screen`'s `.5s` fade transition change, update the matching JS delays too so they
+  stay in sync.
 
 There is no Draw (freehand paint) mode — only **Upload** (image) and **Live** (camera). It was
 removed; don't reintroduce brush/undo/reference-image code without being asked. There is also no
@@ -312,7 +342,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v69`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v70`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.

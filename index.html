@@ -756,6 +756,28 @@
             -webkit-text-fill-color: var(--muted);
         }
 
+        /* Selection is a distinct mode you opt into (a real tap target — the whole thumbnail
+           — instead of a tiny corner circle that's easy to miss and instead opens the
+           viewer). Off by default; toggling it on reveals the check circles below. */
+        #gallery-select-toggle {
+            background: transparent;
+            border: none;
+            padding: 4px 0;
+            cursor: pointer;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            -webkit-text-fill-color: var(--muted);
+        }
+
+        #gallery-select-toggle.active {
+            color: var(--zoom-accent);
+            -webkit-text-fill-color: var(--zoom-accent);
+        }
+
         #gallery-grid {
             flex: 1;
             overflow-y: auto;
@@ -802,9 +824,11 @@
             text-shadow: 0 1px 3px rgba(0, 0, 0, .8);
         }
 
-        /* Selection circle is its own tap target (stopPropagation) — tapping the rest of
-           the thumbnail opens the full-screen viewer instead. */
+        /* Only shown once #gallery-screen.select-mode is on (via the header's Select toggle)
+           — outside select mode, tapping anywhere on a thumbnail opens the full-screen
+           viewer, so there's nothing to show here. */
         .gallery-item .gallery-check {
+            display: none;
             position: absolute;
             top: 6px;
             right: 6px;
@@ -813,6 +837,10 @@
             border-radius: 0;
             border: 1.5px solid #fff;
             background: rgba(0, 0, 0, .35);
+        }
+
+        #gallery-screen.select-mode .gallery-item .gallery-check {
+            display: block;
         }
 
         .gallery-item.selected .gallery-check {
@@ -828,12 +856,17 @@
             pointer-events: none;
         }
 
+        /* Only shown in select mode — nothing to batch-act on otherwise. */
         #gallery-actions {
+            display: none;
             flex: 0 0 auto;
-            display: flex;
             gap: 8px;
             padding: 12px 16px;
             border-top: 1px solid var(--border);
+        }
+
+        #gallery-screen.select-mode #gallery-actions {
+            display: flex;
         }
 
         #gallery-actions .btn {
@@ -1606,6 +1639,75 @@
             }
         }
 
+        /* Splash — logo entrance, then the app name typed out, then fades into the
+           install-prompt screen right after it. Sits above it (z-index) since it's shown
+           first and fades away to reveal it underneath. */
+        #splash-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1100;
+            background: var(--bg);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'IBM Plex Mono', monospace;
+            opacity: 1;
+            transition: opacity .5s ease;
+        }
+
+        #splash-screen.show {
+            display: flex;
+        }
+
+        #splash-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #splash-logo {
+            width: 72px;
+            height: 72px;
+            opacity: 0;
+            transform: scale(.85);
+            animation: splash-logo-in .6s cubic-bezier(.2, .9, .3, 1) forwards;
+        }
+
+        @keyframes splash-logo-in {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        #splash-title {
+            margin-top: 18px;
+            min-height: 1em;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--text);
+            border-right: 2px solid transparent;
+        }
+
+        #splash-title.caret {
+            border-right-color: var(--text);
+            animation: splash-caret-blink .8s step-end infinite;
+        }
+
+        @keyframes splash-caret-blink {
+
+            0%,
+            100% {
+                border-color: var(--text);
+            }
+
+            50% {
+                border-color: transparent;
+            }
+        }
+
         /* מסך הזמנה להוספה למסך הבית (מובייל, בפתיחה מהקישור) */
         #install-prompt {
             display: none;
@@ -1667,6 +1769,13 @@
 </head>
 
 <body>
+    <!-- Splash: plays once before the "Add to Home Screen" prompt below (same conditions
+         gate both) — logo entrance animation, then the app name typed out, then a fade into
+         that screen. Purely decorative; carries no state of its own. -->
+    <div id="splash-screen" aria-hidden="true">
+        <img id="splash-logo" src="icon.svg" alt="" />
+        <h1 id="splash-title"></h1>
+    </div>
     <!-- Add to home screen prompt (shown on mobile when opening from link) -->
     <div id="install-prompt" aria-hidden="true">
         <h2>Pixelart Maker</h2>
@@ -1730,6 +1839,7 @@
             <button type="button" id="gallery-close" aria-label="Close gallery">✕</button>
             <span id="gallery-title">GALLERY</span>
             <span id="gallery-count"></span>
+            <button type="button" id="gallery-select-toggle">Select</button>
         </div>
         <div id="gallery-grid"></div>
         <div id="gallery-empty" style="display:none">No captures yet</div>
@@ -3788,12 +3898,26 @@
             }
         }
 
+        // Off by default — the grid opens straight into "tap to view", the same as any
+        // phone photo gallery. Turning this on (via the header's Select button) is what
+        // reveals the check circles and makes the whole tile the tap target for toggling
+        // selection, instead of the previous always-on tiny corner circle that was easy to
+        // miss and just opened the viewer instead.
+        let gallerySelectMode = false;
+
         function renderGallery() {
             const grid = document.getElementById('gallery-grid');
             const empty = document.getElementById('gallery-empty');
             const countEl = document.getElementById('gallery-count');
             const delBtn = document.getElementById('gallery-delete');
             const dlBtn = document.getElementById('gallery-download');
+            const screen = document.getElementById('gallery-screen');
+            const selectToggle = document.getElementById('gallery-select-toggle');
+            if (screen) screen.classList.toggle('select-mode', gallerySelectMode);
+            if (selectToggle) {
+                selectToggle.textContent = gallerySelectMode ? 'Cancel' : 'Select';
+                selectToggle.classList.toggle('active', gallerySelectMode);
+            }
             if (!grid) return;
             grid.innerHTML = '';
             if (galleryItems.length === 0) {
@@ -3842,11 +3966,22 @@
             if (!screen) return;
             screen.style.display = 'none';
             screen.setAttribute('aria-hidden', 'true');
+            // Clean slate next time it's opened — same idea as the rest of the app not
+            // persisting state across a fresh look at something.
+            gallerySelectMode = false;
+            galleryItems.forEach((i) => { i.selected = false; });
         }
 
         if (mobGallery) mobGallery.addEventListener('click', openGallery);
         const galleryCloseBtn = document.getElementById('gallery-close');
         if (galleryCloseBtn) galleryCloseBtn.addEventListener('click', closeGallery);
+
+        const gallerySelectToggle = document.getElementById('gallery-select-toggle');
+        if (gallerySelectToggle) gallerySelectToggle.addEventListener('click', () => {
+            gallerySelectMode = !gallerySelectMode;
+            if (!gallerySelectMode) galleryItems.forEach((i) => { i.selected = false; });
+            renderGallery();
+        });
 
         const galleryGrid = document.getElementById('gallery-grid');
         if (galleryGrid) galleryGrid.addEventListener('click', (e) => {
@@ -3854,7 +3989,9 @@
             if (!cell) return;
             const item = galleryItems.find((i) => i.id === cell.dataset.id);
             if (!item) return;
-            if (e.target.closest('.gallery-check')) {
+            // In select mode the whole tile toggles selection; otherwise (default) tapping
+            // anywhere opens the full-screen viewer, like any phone photo gallery.
+            if (gallerySelectMode) {
                 item.selected = !item.selected;
                 renderGallery();
                 return;
@@ -4008,6 +4145,20 @@
             }
         });
 
+        // Hardware volume buttons as a shutter trigger, like a real camera app — best
+        // effort only: iOS Safari (and every other iOS browser, since they all share its
+        // WebKit engine) never exposes volume key presses to web content at all, by OS
+        // design, so this can't work on an iPhone no matter what. Some Android browsers do
+        // dispatch a keydown for it (undocumented, inconsistent across devices/versions),
+        // so this is here for whichever ones do — reuses the shutter's own click handler
+        // rather than duplicating its capture/record logic.
+        window.addEventListener('keydown', (e) => {
+            if (state.mode !== 'live') return;
+            if (e.key !== 'AudioVolumeUp' && e.key !== 'AudioVolumeDown' && e.keyCode !== 24 && e.keyCode !== 25) return;
+            e.preventDefault();
+            if (mobShutter) mobShutter.click();
+        });
+
         // Download: always downloads the pixel fill image
         if (mobDl) mobDl.addEventListener('click', saveUploadResultToGallery);
 
@@ -4077,7 +4228,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v69';
+            const __BUILD = 'v70';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4111,7 +4262,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=69';
+            const __SW_URL = 'sw.js?v=70';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -4191,15 +4342,55 @@
                 try { sessionStorage.setItem('pixelmaker-skip-install', '1'); } catch (_) { }
             });
 
-            if (installEl && isMobile && !isStandalone) {
-                try {
-                    if (sessionStorage.getItem('pixelmaker-skip-install')) return;
-                } catch (_) { }
+            function revealInstallPrompt() {
                 installEl.setAttribute('aria-hidden', 'false');
                 installEl.classList.add('show');
                 if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) showManualHint();
             }
+
+            if (installEl && isMobile && !isStandalone) {
+                try {
+                    if (sessionStorage.getItem('pixelmaker-skip-install')) return;
+                } catch (_) { }
+                playSplashThen(revealInstallPrompt);
+            }
         })();
+
+        // Splash: logo entrance animation, then the app name typed out, then a fade into
+        // whatever comes next (the install prompt above). Purely presentational — no state,
+        // no persistence — so it's a plain function rather than something wired into `state`.
+        function playSplashThen(next) {
+            const splash = document.getElementById('splash-screen');
+            const title = document.getElementById('splash-title');
+            if (!splash || !title) { next(); return; }
+            const APP_NAME = 'Pixelart Maker';
+            splash.setAttribute('aria-hidden', 'false');
+            splash.classList.add('show');
+            title.textContent = '';
+            title.classList.add('caret');
+            // Let the logo's own entrance animation (600ms) play out before typing starts.
+            setTimeout(() => {
+                let i = 0;
+                const typeInterval = setInterval(() => {
+                    i++;
+                    title.textContent = APP_NAME.slice(0, i);
+                    if (i >= APP_NAME.length) {
+                        clearInterval(typeInterval);
+                        setTimeout(() => {
+                            title.classList.remove('caret');
+                            setTimeout(() => {
+                                splash.classList.add('fade-out');
+                                setTimeout(() => {
+                                    splash.classList.remove('show', 'fade-out');
+                                    splash.setAttribute('aria-hidden', 'true');
+                                    next();
+                                }, 500); // matches the CSS opacity transition duration
+                            }, 500); // brief pause so the full name is readable before fading
+                        }, 300); // caret keeps blinking a beat after the last character
+                    }
+                }, 70);
+            }, 650);
+        }
     </script>
 </body>
 
