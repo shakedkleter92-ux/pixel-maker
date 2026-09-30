@@ -251,8 +251,14 @@
         .palette-presets {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: min-content;
             gap: 4px;
             margin-bottom: 8px;
+            /* Capped to ~2 rows — there can be many presets once the palette_list/ folder
+               fills up, and showing them all at once made the panel very tall. Scrolls for
+               the rest instead of pushing the rest of the panel (or the screen) down. */
+            max-height: 50px;
+            overflow-y: auto;
         }
 
         /* Fixed grid = every preset button is the same size no matter its label's length
@@ -545,7 +551,7 @@
             }
 
             #panel.panel-open .section {
-                background: rgba(255, 255, 255, 0.18);
+                background: rgba(255, 255, 255, 0.1);
             }
 
             /* Canvas stays full-size and fixed; the panel is a translucent overlay
@@ -689,6 +695,13 @@
 
         body.mode-upload #panel-toggle-bar:active {
             background: var(--surface);
+        }
+
+        /* Hidden while the panel is open — closing is by tapping anywhere outside it
+           instead, so the panel can use the space the toggle used to keep floating over,
+           and the live canvas stays visible behind it. */
+        body.panel-open #panel-toggle-bar {
+            display: none !important;
         }
 
         @media (hover: hover) {
@@ -1122,15 +1135,14 @@
             #panel.panel-open {
                 max-height: 40vh;
                 overflow-y: auto;
-                /* Clears the floating menu toggle (top:20px, 40px tall) sitting on top of
-                   the panel at z-index 210, so its first section's text isn't covered. */
-                padding-top: 68px;
                 /* Always sit above every floating control (mode header, shutter, zoom, etc.) */
                 z-index: 200;
-                /* Frosted glass panel (readable over Live) */
-                background: rgba(255, 255, 255, 0.3);
-                -webkit-backdrop-filter: blur(14px) saturate(140%);
-                backdrop-filter: blur(14px) saturate(140%);
+                /* Much more see-through than before, on purpose — the live canvas behind it
+                   should stay genuinely visible, not just a colored blur. Lighter frost
+                   (lower opacity, much less blur) than the old "readable glass panel" look. */
+                background: rgba(255, 255, 255, 0.12);
+                -webkit-backdrop-filter: blur(4px) saturate(140%);
+                backdrop-filter: blur(4px) saturate(140%);
                 isolation: isolate;
                 color: var(--text);
             }
@@ -1167,7 +1179,7 @@
             }
 
             #panel.panel-open .section {
-                background: rgba(255, 255, 255, 0.18);
+                background: rgba(255, 255, 255, 0.1);
             }
 
             /* הקנבס נשאר קבוע במקום ובגודל שלו; הפאנל הוא overlay שקוף-למחצה
@@ -1604,6 +1616,51 @@
             fill: var(--zoom-accent);
         }
 
+        /* Resolution — persistent vertical slider on the right edge, both Live and Upload.
+           Moved out of the panel entirely: this is the control worth playing with live while
+           watching the canvas, so it shouldn't need the menu open at all. Runs from just
+           below the top toggle/ratio button down to just above the bottom control row. */
+        #mob-res-slider-wrap {
+            position: fixed;
+            top: 90px;
+            bottom: 190px;
+            right: 14px;
+            z-index: 86;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #mob-res-slider-wrap span {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text);
+            background: var(--fab-bg);
+            padding: 3px 4px;
+            min-width: 22px;
+            text-align: center;
+        }
+
+        body.mode-upload #mob-res-slider-wrap span {
+            background: var(--panel);
+        }
+
+        #mob-res-slider-wrap input[type=range] {
+            flex: 1;
+            width: 4px;
+            /* Rotated via writing-mode (not -webkit-appearance:slider-vertical, which pulls
+               in the OS's own native blue fill/thumb and ignores the square custom thumb
+               styling below) so it stays the same flat square design as every other control. */
+            writing-mode: vertical-lr;
+            direction: rtl;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--border);
+            outline: none;
+            cursor: pointer;
+        }
+
         /* Aspect ratio — top-right, Live only (on mobile below mode header) */
         #mob-ratio {
             width: 44px;
@@ -1798,6 +1855,12 @@
     <!-- Upload mode's equivalent of the shutter: always available (even once an image is
          already loaded) so there's a way to pick another one and replace it. -->
     <button id="mob-upload-more" aria-label="Upload image" type="button" style="display:none">↑</button>
+    <!-- Resolution: a persistent vertical slider on the right edge, shown in both Live and
+         Upload — dragging it updates the grid live, without opening the panel at all. -->
+    <div id="mob-res-slider-wrap" style="display:none">
+        <span id="g-res-v">300</span>
+        <input type="range" id="g-res" min="8" max="500" value="300" />
+    </div>
     <!-- Aspect ratio: top, Live only -->
     <button id="mob-ratio" aria-label="Aspect ratio" type="button" style="display:none">
         <img src="ratio_icon.png" alt="" width="22" height="22">
@@ -1877,18 +1940,13 @@
                 </div>
             </div>
 
-            <!-- 01 Resolution -->
-            <div class="section">
-                <div class="slider-row">
-                    <span class="sec-label"><span class="sec-num">01</span> Resolution</span>
-                    <input type="range" id="g-res" min="8" max="300" value="300" />
-                    <span class="sl-val" id="g-res-v">300</span>
-                </div>
-            </div>
+            <!-- Resolution now lives outside the panel entirely — #mob-res-slider-wrap,
+                 a persistent vertical slider floating over the canvas, so it can be dragged
+                 live without opening this menu at all (see MOBILE section). -->
 
-            <!-- 02 Palette -->
+            <!-- 01 Palette -->
             <div class="section" id="palette-section">
-                <div class="sec-label"><span class="sec-num">02</span> Palette</div>
+                <div class="sec-label"><span class="sec-num">01</span> Palette</div>
                 <div class="palette-presets" id="palette-presets">
                     <button type="button" class="pal-tgt" data-preset="moldy_orange_7">Moldy</button>
                     <button type="button" class="pal-tgt" data-preset="slso8">SLSO8</button>
@@ -1905,7 +1963,7 @@
 
             <!-- 03 Export -->
             <div class="section">
-                <div class="sec-label"><span class="sec-num">03</span> Export</div>
+                <div class="sec-label"><span class="sec-num">02</span> Export</div>
                 <button class="btn btn-fill" id="dl-pixels">Download</button>
                 <button class="btn btn-outline" id="btn-clear">Clear All</button>
             </div>
@@ -3564,6 +3622,7 @@
             const isSmall = isMobileLayout();
             var modeBtn = document.getElementById('mob-capture-mode');
             var zoomPresets = document.getElementById('mob-zoom-presets');
+            var resSliderWrap = document.getElementById('mob-res-slider-wrap');
             if (!isSmall) {
                 mobShutter.style.display = 'none';
                 if (mobUploadMore) mobUploadMore.style.display = 'none';
@@ -3574,8 +3633,13 @@
                 if (modeBtn) modeBtn.style.display = 'none';
                 if (mobGallery) mobGallery.style.display = 'none';
                 if (zoomPresets) zoomPresets.style.display = 'none';
+                if (resSliderWrap) resSliderWrap.style.display = 'none';
                 return;
             }
+
+            // Resolution is worth playing with live in both modes, so its slider is always
+            // shown, same as the gallery FAB.
+            if (resSliderWrap) resSliderWrap.style.display = 'flex';
 
             // The panel now opens downward from the top bar, so it no longer overlaps the
             // bottom controls — no need to hide them while it's open (unlike before, when
@@ -3644,6 +3708,14 @@
         }
 
         if (panelToggleBar) panelToggleBar.addEventListener('click', () => {
+            toggleMobilePanel();
+        });
+        // Tapping anywhere outside the open panel closes it — the hamburger itself is
+        // hidden while open (see body.panel-open CSS), so this is the way back out besides
+        // picking something inside it.
+        document.addEventListener('click', (e) => {
+            if (!panel.classList.contains('panel-open')) return;
+            if (panel.contains(e.target) || (panelToggleBar && panelToggleBar.contains(e.target))) return;
             toggleMobilePanel();
         });
         // Ensure initial layout uses correct panel height (if panel starts open)
@@ -4228,7 +4300,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v70';
+            const __BUILD = 'v71';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4262,7 +4334,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=70';
+            const __SW_URL = 'sw.js?v=71';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

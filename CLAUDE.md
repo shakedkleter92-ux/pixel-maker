@@ -207,19 +207,24 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   FAB (`#panel-toggle-icon`, a plain `☰` span, no title text and no separate `<button>` inside
   it — the whole square is still the click target) floating at `top: 20px; left: 20px`, same
   size/treatment as the other buttons everywhere. It does **not** reserve any layout space —
-  `#main`, `#panel`, and the panel-open scrim (`#panel.panel-open::before`) all sit at `top: 0`
-  now, and the toggle floats over the canvas like any other FAB. Because the panel needs to
-  start flush at the top, the toggle sits at `z-index: 210` — **above** the open panel's
-  `z-index: 200` — so it stays visible/clickable to close the panel again instead of being
-  covered by it; `#panel.panel-open` also carries `padding-top: 68px` so its first section's
-  text doesn't render underneath the floating square. Idle background matches the other FABs'
-  `body.mode-upload` pattern (translucent `--fab-bg` in Live, solid `--panel` in Upload) — kept
-  as its own self-contained rule rather than joining the shared FAB selector list, specifically
-  so this `z-index: 210` override reliably wins the cascade over the shared block's `z-index:
-  85`. It still flips to solid `--text` (black) via `.active` while the panel is open, same as
-  before. `#mob-rec-timer` moved from `top: 46px` (which assumed the old 36px-tall bar) to
-  `top: 20px` (aligned with the toggle's own top offset, now that nothing reserves space up
-  there). There is no separate top mode-header anymore
+  `#main`, `#panel`, and the panel-open scrim (`#panel.panel-open::before`) all sit at `top: 0`.
+  **The toggle itself hides while the panel is open** (`body.panel-open #panel-toggle-bar {
+  display: none !important; }`) instead of floating above it — closing is by tapping anywhere
+  outside `#panel` (a `document` click listener checks `!panel.contains(e.target)` and calls
+  `toggleMobilePanel()`), same as any dropdown/sheet pattern. This replaced an earlier version
+  where the toggle stayed visible at `z-index: 210` above the open panel's `200` specifically so
+  it remained clickable to close again — reported as wasting a "wasted white bar" of space (the
+  panel needed `padding-top: 68px` to keep its first section's text from rendering underneath
+  that floating square); tap-outside-to-close let both the padding and the always-visible
+  toggle go. Idle background still matches the other FABs' `body.mode-upload` pattern
+  (translucent `--fab-bg` in Live, solid `--panel` in Upload) via its own self-contained rule.
+  It still flips to solid `--text` (black) via `.active` while the panel is open. `#mob-rec-timer`
+  is at `top: 20px` (aligned with the toggle's own top offset, since nothing reserves space up
+  there). `#panel.panel-open`'s frosted-glass look was deliberately made **much more
+  see-through** — `rgba(255,255,255,.12)` background (was `.3`) and `blur(4px)` (was `14px`) —
+  after it reported as hiding too much of the live canvas behind it; don't push the blur back up
+  without checking that the canvas is still genuinely recognizable through it, not just tinted.
+  There is no separate top mode-header anymore
   (`#mob-mode-header` / `.mob-fm-btn` / `#mob-fm-image` / `#mob-fm-live` were removed along with
   it) — Upload/Live switching lives entirely in the Video/Photo/Upload row described above. The
   panel (`#panel.panel-open`) is `z-index: 200`, but **opening it no longer hides the bottom
@@ -240,6 +245,19 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   `#mob-capture-mode.on-light-bg` whenever `state.mode !== 'live'` (toggled in
   `updateModeRowActive()`) — Upload's backdrop is the plain white canvas, so white-on-white text
   would otherwise disappear.
+  **Resolution lives outside the panel entirely** — `#mob-res-slider-wrap` is a persistent
+  vertical slider floating on the right edge (`top: 90px` to `bottom: 190px`), shown in both
+  Live and Upload, same as `#mob-gallery`. It used to be a `.slider-row` inside the panel's "01
+  Resolution" section (now removed — Palette renumbered to "01", Export to "02"); moved out
+  because dragging it live while watching the grid change *is* the app, and that shouldn't
+  require opening a menu first. `#g-res`/`#g-res-v` kept their IDs across the move, so
+  `on('g-res', 'input', ...)` (still syncing `state.imgRes` + `liveState.res` together) needed
+  no changes. The vertical orientation is `writing-mode: vertical-lr; direction: rtl;` with
+  `-webkit-appearance: none` — **not** `-webkit-appearance: slider-vertical`, which pulls in the
+  browser's own native blue fill/round-thumb rendering and ignores the app's square custom
+  `::-webkit-slider-thumb`/track styling entirely; tried that first, it looked completely
+  inconsistent with the rest of the UI. Range raised from `max="300"` to `max="500"` (the
+  default `value` is still `300` on load either way).
 - **3690 INIT** — defaults to Live mode on load (starts the camera immediately).
   `playSplashThen(next)` plays a purely presentational splash (logo entrance animation, the
   app name typed out character-by-character with a blinking caret, then a fade) before calling
@@ -331,6 +349,9 @@ a folder's contents on its own. The mechanism:
 - The palette bar (`.palette-presets`) is a fixed 4-column grid so every button — built-in or
   folder-sourced, short label or long — is exactly the same size; long labels clip with an
   ellipsis (`title` attribute still carries the full name) rather than resizing their button.
+  It's also capped to `max-height: 50px` (~2 rows) with `overflow-y: auto` — with the built-ins
+  plus everything `palette_list/` adds, this list can get long, and showing it all at once made
+  the panel very tall; it scrolls internally instead now.
 - The ten built-in palettes in `PALETTE_PRESETS` are separate and unaffected by any of this —
   they're not sourced from `palette_list/`, don't touch them for this feature.
 
@@ -342,7 +363,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v70`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v71`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.
