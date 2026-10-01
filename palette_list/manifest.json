@@ -98,6 +98,18 @@
     ]
   },
   {
+    "key": "a_blood_steeped_corridor",
+    "label": "A Blood Steeped Corridor",
+    "file": "a-blood-steeped-corridor-32x.png",
+    "colors": [
+      "#17152e",
+      "#3c566c",
+      "#84aea4",
+      "#d4e2cc",
+      "#e43254"
+    ]
+  },
+  {
     "key": "ammo_8",
     "label": "Ammo 8",
     "file": "ammo-8-32x.png",
@@ -166,6 +178,51 @@
       "#ffbae1",
       "#e687c5",
       "#a759b9"
+    ]
+  },
+  {
+    "key": "bath_house",
+    "label": "Bath House",
+    "file": "bath-house-32x.png",
+    "colors": [
+      "#ded4c8",
+      "#beaa9c",
+      "#94837a",
+      "#645c59",
+      "#181e28",
+      "#dbaf88",
+      "#b8926f",
+      "#987052",
+      "#624a30",
+      "#2f2114",
+      "#df8b79",
+      "#e26560",
+      "#b0454c",
+      "#5b3636",
+      "#e5be3e",
+      "#be8e03",
+      "#916803",
+      "#644507",
+      "#f18b49",
+      "#d46b2b",
+      "#ba5113",
+      "#7a3412",
+      "#eb8281",
+      "#d95b5b",
+      "#bf2f37",
+      "#64272c",
+      "#b58fb6",
+      "#7e638e",
+      "#594a66",
+      "#3c3145",
+      "#30bab3",
+      "#1390ac",
+      "#0b5472",
+      "#233552",
+      "#abcf5f",
+      "#789949",
+      "#39681d",
+      "#084739"
     ]
   },
   {
@@ -296,6 +353,17 @@
       "#8fa0bf",
       "#9aabc9",
       "#a5b7d4"
+    ]
+  },
+  {
+    "key": "cosmic_cream_gb",
+    "label": "Cosmic Cream Gb",
+    "file": "cosmic-cream-gb-32x.png",
+    "colors": [
+      "#220780",
+      "#615fed",
+      "#ffba5a",
+      "#fffab2"
     ]
   },
   {
@@ -451,6 +519,21 @@
     ]
   },
   {
+    "key": "greyt_bit",
+    "label": "Greyt Bit",
+    "file": "greyt-bit-32x.png",
+    "colors": [
+      "#574368",
+      "#8488d3",
+      "#cfd3c1",
+      "#f8c868",
+      "#8ddb34",
+      "#69cfef",
+      "#d1b3ff",
+      "#ff8e65"
+    ]
+  },
+  {
     "key": "herbarium24",
     "label": "Herbarium24",
     "file": "herbarium24-32x.png",
@@ -482,6 +565,19 @@
     ]
   },
   {
+    "key": "hot_sand_6",
+    "label": "Hot Sand 6",
+    "file": "hot-sand-6-32x.png",
+    "colors": [
+      "#3a0000",
+      "#590000",
+      "#7c0300",
+      "#c02b18",
+      "#e04217",
+      "#f26d1f"
+    ]
+  },
+  {
     "key": "insecta",
     "label": "Insecta",
     "file": "insecta-32x.png",
@@ -505,6 +601,17 @@
       "#f42e1f",
       "#2f256b",
       "#060608"
+    ]
+  },
+  {
+    "key": "laser_lab",
+    "label": "Laser Lab",
+    "file": "laser-lab-32x.png",
+    "colors": [
+      "#e01f3f",
+      "#fff8ed",
+      "#7b6960",
+      "#271d2c"
     ]
   },
   {
