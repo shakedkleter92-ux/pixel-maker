@@ -3924,6 +3924,9 @@
             liveRecordCanvas.width = dim.w;
             liveRecordCanvas.height = dim.h;
             liveRecordCtx = liveRecordCanvas.getContext('2d');
+            // Keep pixel art crisp when blitting the smaller on-screen canvas up to this
+            // one's higher resolution below, instead of a blurry smoothed upscale.
+            liveRecordCtx.imageSmoothingEnabled = false;
             // Seed real content before the stream/recorder start, so the first
             // captured frame isn't a blank black canvas.
             drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
@@ -3958,7 +3961,18 @@
             };
             liveVideoRecorder.start(1000 / LIVE_RECORD_FPS);
             liveRecordInterval = setInterval(function () {
-                if (liveRecordCanvas && liveRecordCtx && liveVideoRecorder && liveVideoRecorder.state === 'recording') {
+                if (!(liveRecordCanvas && liveRecordCtx && liveVideoRecorder && liveVideoRecorder.state === 'recording')) return;
+                // Reuse the on-screen preview canvas (liveLoop() already keeps it current
+                // every animation frame) instead of walking every cell a second time here —
+                // doing the full tracePath()+fill() render twice per tick, once for the
+                // screen and once again for this, was overloading the main thread and
+                // showing up as choppy video *and* stuttering audio (MediaRecorder's timing
+                // gets starved when JS is this busy). A single drawImage blit is effectively
+                // free by comparison and looks identical, since the art's real resolution is
+                // the cell grid, not this canvas's pixel size.
+                if (liveCoverCanvas && liveCoverCanvas.width > 0 && liveCoverCanvas.height > 0) {
+                    liveRecordCtx.drawImage(liveCoverCanvas, 0, 0, liveRecordCanvas.width, liveRecordCanvas.height);
+                } else {
                     drawGridToContext(liveRecordCtx, liveRecordCanvas.width, liveRecordCanvas.height);
                 }
             }, 1000 / LIVE_RECORD_FPS);
@@ -4345,7 +4359,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v75';
+            const __BUILD = 'v76';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4379,7 +4393,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=75';
+            const __SW_URL = 'sw.js?v=76';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

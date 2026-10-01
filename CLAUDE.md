@@ -90,6 +90,24 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
 - **2508 LIVE CAMERA** — getUserMedia (video + audio), per-breakpoint constraints, aspect-ratio
   cycling, `liveLoop()` sampling frames into the grid, MediaRecorder video capture (recorded
   video includes the mic audio track when permission is granted).
+  **`toggleVideoRecording()`'s recording-interval tick must never call `drawGridToContext()`
+  again.** `liveLoop()`'s own `requestAnimationFrame` loop already walks every cell
+  (`tracePath()` + `fill()`) once per frame to keep the on-screen `liveCoverCanvas` current;
+  the recording interval used to do that *exact same full walk a second time*, from scratch,
+  onto a separate hi-res (`LIVE_EXPORT_DIMENSIONS`, e.g. 1080×1920) canvas, every
+  `1000/LIVE_RECORD_FPS` (~33ms). At resolution 500 that's 250k+ cells — measured at **~98ms**
+  per full render, i.e. the main thread was being asked to redo a 98ms job every 33ms, on top
+  of the preview already doing the same 98ms job every animation frame. That's what "choppy
+  video, stuttering audio" actually was — not a codec/bitrate issue, the main thread was simply
+  saturated (audio encoding timing starves when JS is this busy). Fixed by having the interval
+  `drawImage()`-blit the already-current `liveCoverCanvas` into `liveRecordCanvas` instead
+  (measured at ~0ms) — looks identical, since the art's real resolution is the cell grid, not
+  either canvas's pixel size. `liveRecordCtx.imageSmoothingEnabled = false` is required for
+  that blit to stay crisp when scaling up instead of a blurry smoothed upscale. Only falls back
+  to a real `drawGridToContext()` call if `liveCoverCanvas` isn't ready yet (shouldn't normally
+  happen mid-recording). Don't reintroduce a second full-grid render in this interval — if the
+  recording ever needs to look different from the live preview, downscale/blit from
+  `liveCoverCanvas`, don't re-walk `state.cells`.
   **Zoom** is pinch-to-reveal, not a button: a two-finger pinch on the viewfinder
   (`gridCanvas` touchstart/touchmove/touchend in `wireMobileZoomUI()`) opens a curved
   drag-to-scrub dial (`#mob-zoom-dial`, an SVG arc — geometry constants `ZOOM_DIAL_*`,
@@ -388,7 +406,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v75`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v76`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.
