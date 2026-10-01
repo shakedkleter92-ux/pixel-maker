@@ -386,8 +386,16 @@ a folder's contents on its own. The mechanism:
   its hex colors, then writes `palette_list/manifest.json` — an array of
   `{key, label, file, colors}`, one entry per PNG currently in the folder, nothing else.
   **Run this (`python3 palette_list/build_manifest.py`) every time a PNG is added or removed** —
-  it's the one manual step; everything downstream is automatic. It uses PIL (`from PIL import
-  Image`), already available in this environment.
+  it's the one manual step; everything downstream is automatic (it isn't triggered by any file
+  watcher or CI — nothing runs it unless asked). It uses PIL (`from PIL import Image`), already
+  available in this environment. **Adding palettes this way still needs the usual `CACHE`/
+  `__BUILD`/`__SW_URL` version bump**, even though no app code changed — the regenerated
+  `manifest.json` is a same-origin asset, and the service worker's cache-first strategy for
+  non-navigation requests applies to it exactly like everything else, `fetch(..., {cache:
+  'no-store'})` in `loadFolderPalettes()` notwithstanding (that only bypasses the *browser's*
+  HTTP cache, not the service worker intercepting the request first). Skipping the version
+  bump here risks the same stale-palette-list reports already seen earlier from this exact
+  cause.
 - `index.html`'s `loadFolderPalettes()` (near INIT, after the built-in `renderPresetBar()` call)
   fetches that `manifest.json` at load (`cache: 'no-store'`) and merges each entry straight into
   `PALETTE_PRESETS`/`PALETTE_LABELS`, then re-renders the preset bar. A palette that isn't in the
@@ -423,7 +431,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v77`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v78`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.
