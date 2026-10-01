@@ -415,11 +415,19 @@ a folder's contents on its own. The mechanism:
   `overflow-x: hidden` as a belt-and-suspenders backstop. It's also capped to
   `max-height: 78px` (~3 rows, was ~2 rows at `50px`) with `overflow-y: auto` — with the
   built-ins plus everything `palette_list/` adds, this list can get long, and showing it all at
-  once made the panel very tall; it scrolls internally instead now. The scrollbar itself is
-  styled square (`::-webkit-scrollbar-thumb { border-radius: 0 }` + a visible
-  `::-webkit-scrollbar-track` background) rather than the browser's default rounded pill, which
-  was reported as unclear — both that it was a scrollbar at all and how much there was left to
-  scroll.
+  once made the panel very tall; it scrolls internally instead now. **The scroll indicator is a
+  plain styled `<div>` (`#palette-scrollbar`/`#palette-scrollbar-thumb`, siblings of
+  `.palette-presets` inside `.palette-presets-wrap`), not the browser's native scrollbar** —
+  `.palette-presets` itself hides its real one (`scrollbar-width: none` +
+  `::-webkit-scrollbar { display: none }`). Tried styling the native one first
+  (`::-webkit-scrollbar-thumb { border-radius: 0 }` etc.) — don't go back to that; iOS Safari's
+  overlay scrollbars ignore `::-webkit-scrollbar` styling entirely, so the rounded-pill look
+  never actually went away on the one device that matters here, despite looking correct in
+  Chromium. `syncPaletteScrollbar()` (called from `renderPresetBar()`, the track's own `scroll`
+  listener, `window`'s `resize`, and once more when the panel opens — it can't be measured
+  correctly while the panel's still collapsed at `max-height: 0`) computes the thumb's
+  height/position from `.palette-presets`' real `scrollTop`/`scrollHeight`/`clientHeight`, and
+  hides the whole track when there's nothing to scroll.
 - The ten built-in palettes in `PALETTE_PRESETS` are separate and unaffected by any of this —
   they're not sourced from `palette_list/`, don't touch them for this feature.
 
@@ -431,7 +439,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v78`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v79`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.

@@ -130,6 +130,45 @@
     ]
   },
   {
+    "key": "axulart_32_color_palette",
+    "label": "Axulart 32 Color Palette",
+    "file": "axulart-32-color-palette-32x.png",
+    "colors": [
+      "#000000",
+      "#fcfcfc",
+      "#c4c7ee",
+      "#9a8fe0",
+      "#635d96",
+      "#292f65",
+      "#1b1d34",
+      "#ffe3ae",
+      "#cdbbab",
+      "#a6858f",
+      "#cf5d8b",
+      "#964968",
+      "#ffb482",
+      "#dd867d",
+      "#b2696f",
+      "#f6c65e",
+      "#e49057",
+      "#c46833",
+      "#b0d07e",
+      "#66aa5d",
+      "#52b5ab",
+      "#2a8379",
+      "#1c5659",
+      "#7be1f6",
+      "#589ffc",
+      "#5069e4",
+      "#2e44ae",
+      "#8056d4",
+      "#5a3b96",
+      "#ffbae1",
+      "#e687c5",
+      "#a759b9"
+    ]
+  },
+  {
     "key": "bloodflame",
     "label": "Bloodflame",
     "file": "bloodflame-32x.png",
@@ -361,6 +400,29 @@
     ]
   },
   {
+    "key": "go_line",
+    "label": "Go Line",
+    "file": "go-line-32x.png",
+    "colors": [
+      "#430067",
+      "#94216a",
+      "#ff004d",
+      "#ff8426",
+      "#ffdd34",
+      "#50e112",
+      "#3fa66f",
+      "#365987",
+      "#000000",
+      "#0033ff",
+      "#29adff",
+      "#00ffcc",
+      "#fff1e8",
+      "#c2c3c7",
+      "#ab5236",
+      "#5f574f"
+    ]
+  },
+  {
     "key": "gopals_primarymono",
     "label": "Gopals Primarymono",
     "file": "gopals-primarymono-32x.png",
@@ -516,6 +578,30 @@
     ]
   },
   {
+    "key": "neo_5",
+    "label": "Neo 5",
+    "file": "neo-5-32x.png",
+    "colors": [
+      "#0e0e0e",
+      "#5433be",
+      "#e624af",
+      "#3df9ea",
+      "#effafa"
+    ]
+  },
+  {
+    "key": "neon_moon_tarot",
+    "label": "Neon Moon Tarot",
+    "file": "neon-moon-tarot-32x.png",
+    "colors": [
+      "#000000",
+      "#5f4886",
+      "#8767bd",
+      "#70b9fb",
+      "#fe0094"
+    ]
+  },
+  {
     "key": "nopal_12",
     "label": "Nopal 12",
     "file": "nopal-12-32x.png",
@@ -641,6 +727,20 @@
       "#52a5de",
       "#18284a",
       "#070810"
+    ]
+  },
+  {
+    "key": "retro_115",
+    "label": "Retro 115",
+    "file": "retro-115-32x.png",
+    "colors": [
+      "#040026",
+      "#004bc0",
+      "#0097ec",
+      "#00f3fc",
+      "#ffbcff",
+      "#d569f6",
+      "#6c1fd3"
     ]
   },
   {
