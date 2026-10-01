@@ -87,6 +87,23 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   the panel's Download button (Upload mode) and by Live's Download FAB. Live's shutter/record
   no longer goes through here directly — see GALLERY below. Exports are plain — no title/date/
   credit frame around them (removed).
+  **`shareOrDownloadBlob(blob, name, mimeType)`** is the one function every "save this file"
+  path should call (image `dl()`, video export, and `downloadGalleryItem()` — single and, via
+  its own inlined version for multi-file, batch gallery downloads all use it or its pattern).
+  On mobile it tries `navigator.share({files:[...]})` first — the native OS share sheet, where
+  "Save Image"/"Save Video" is one tap, right from the button press. **Never fall back to a
+  plain `<a download>` click as the primary path on mobile** — iOS Safari doesn't honor
+  `download` at all, it just navigates to the blob URL and shows the file full-screen, leaving
+  the user to find Safari's own share icon themselves and tap "Save Image" manually; that
+  extra page was reported as "I have to open a page and tap share myself" before this existed.
+  `downloadBlobDirect(blob, name)` (the plain `<a download>` approach) is still correct as the
+  fallback for desktop/browsers without file-sharing support, and as what happens if the user
+  cancels the share sheet (via `openBlobInTab()` first, not another download prompt, so there's
+  still a way to save it manually right after backing out of the sheet). **Multi-file batch
+  downloads must share all selected files in one `navigator.share({files})` call, never several
+  calls in a row** — `navigator.share()` throws if called again while a previous call is still
+  in flight, so the old staggered-`setTimeout`-per-item approach would only work for the first
+  item once each path went through the share sheet; see `galleryDownloadBtn`'s click handler.
 - **2508 LIVE CAMERA** — getUserMedia (video + audio), per-breakpoint constraints, aspect-ratio
   cycling, `liveLoop()` sampling frames into the grid, MediaRecorder video capture (recorded
   video includes the mic audio track when permission is granted).
@@ -406,7 +423,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v76`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v77`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.

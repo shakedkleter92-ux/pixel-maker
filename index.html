@@ -2614,6 +2614,47 @@
 
         const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 700;
 
+        // Shared by every "save this file" path in the app (direct downloads, gallery
+        // batch/single-item downloads). On mobile — iOS Safari especially — a plain
+        // <a download> click doesn't actually download anything: Safari just navigates to
+        // the blob URL and shows the image/video full-screen, leaving the user to find
+        // Safari's own share icon and tap "Save Image"/"Save Video" themselves, with an
+        // extra page in between. navigator.share({files}) opens the native share sheet
+        // directly from the button tap instead — "Save Image"/"Save Video" is one of its
+        // first options, no intermediate page. There's no web API for a one-time "always
+        // auto-save, no prompt" permission (unlike camera/mic) — the share sheet is the
+        // closest thing the platform allows, and still needs one tap in it.
+        function shareOrDownloadBlob(blob, name, mimeType) {
+            if (!blob) return;
+            if (isMobile && navigator.canShare) {
+                try {
+                    const file = new File([blob], name, { type: mimeType || blob.type });
+                    if (navigator.canShare({ files: [file] })) {
+                        navigator.share({ files: [file], title: name }).catch(() => {
+                            // Share sheet cancelled/failed — open it full-screen so there's
+                            // still a way to save it manually, rather than silently falling
+                            // into the same <a download> page-navigation this was meant to
+                            // avoid right after the user just backed out of the share sheet.
+                            openBlobInTab(blob);
+                        });
+                        return;
+                    }
+                } catch (_) { /* fall through to direct download */ }
+            }
+            downloadBlobDirect(blob, name);
+        }
+
+        function downloadBlobDirect(blob, name) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.download = name;
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        }
+
         function dl(cnv, name) {
             // Desktop: prefer synchronous data URL download to avoid losing the user-gesture
             // (some browsers block async-toBlob triggered downloads from a modal button).
@@ -2630,29 +2671,7 @@
                 } catch (_) { /* fall back to toBlob */ }
             }
 
-            cnv.toBlob(blob => {
-                if (!blob) return;
-                // On mobile, try Web Share API first (native share sheet)
-                if (isMobile && navigator.canShare) {
-                    const file = new File([blob], name, { type: 'image/png' });
-                    if (navigator.canShare({ files: [file] })) {
-                        navigator.share({ files: [file], title: name }).catch(() => {
-                            // Share cancelled or failed — fall back to opening in new tab
-                            openBlobInTab(blob);
-                        });
-                        return;
-                    }
-                }
-                // Fallback: standard blob download
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.download = name;
-                a.href = url;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(url), 2000);
-            }, 'image/png');
+            cnv.toBlob(blob => shareOrDownloadBlob(blob, name, 'image/png'), 'image/png');
         }
 
         // ═══════════════════════════════════════════════════
@@ -2700,29 +2719,8 @@
                     return;
                 }
                 if (__pendingExport.type === 'video') {
-                    const blob = __pendingExport.blob;
-                    const fileName = __pendingExport.filename;
-                    const mimeType = __pendingExport.mimeType || 'video/webm';
-                    const file = new File([blob], fileName, { type: mimeType });
-                    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 700;
-                    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-                        navigator.share({ files: [file], title: 'Pixel Art Maker Video' }).catch(function () {
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = fileName;
-                            a.click();
-                            setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-                        }).finally(closeExportModal);
-                    } else {
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = fileName;
-                        a.click();
-                        setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-                        closeExportModal();
-                    }
+                    shareOrDownloadBlob(__pendingExport.blob, __pendingExport.filename, __pendingExport.mimeType || 'video/webm');
+                    closeExportModal();
                 }
             });
             document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeExportModal(); });
@@ -4129,12 +4127,12 @@
         });
 
         function downloadGalleryItem(item) {
-            const a = document.createElement('a');
-            a.href = item.url;
-            a.download = item.fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            // Reported as "a web page opens where I have to tap share and save it myself" —
+            // this used to always do the plain <a download> click, which on iOS Safari just
+            // navigates to the item full-screen instead of downloading it (download isn't
+            // honored there). shareOrDownloadBlob() tries the native share sheet first, where
+            // Save Image/Save Video is one tap, no extra page.
+            shareOrDownloadBlob(item.blob, item.fileName, item.mimeType);
         }
 
         const galleryDeleteBtn = document.getElementById('gallery-delete');
@@ -4152,9 +4150,26 @@
         const galleryDownloadBtn = document.getElementById('gallery-download');
         if (galleryDownloadBtn) galleryDownloadBtn.addEventListener('click', () => {
             const selected = galleryItems.filter((i) => i.selected);
-            selected.forEach((item, i) => {
-                setTimeout(() => downloadGalleryItem(item), i * 300);
-            });
+            if (selected.length === 0) return;
+            if (selected.length === 1) { downloadGalleryItem(selected[0]); return; }
+            // Multiple items: navigator.share() throws if called again while a previous call
+            // is still in flight, so staggered single-item shareOrDownloadBlob() calls (like
+            // this used to do) would break after the first one. Share all of them in one call
+            // instead — one tap in the sheet saves everything — falling back to downloading
+            // them individually (plain <a download>, not another share()) if the browser
+            // can't share multiple files together.
+            if (isMobile && navigator.canShare) {
+                try {
+                    const files = selected.map((item) => new File([item.blob], item.fileName, { type: item.mimeType || item.blob.type }));
+                    if (navigator.canShare({ files })) {
+                        navigator.share({ files }).catch(() => {
+                            selected.forEach((item, i) => setTimeout(() => downloadBlobDirect(item.blob, item.fileName), i * 300));
+                        });
+                        return;
+                    }
+                } catch (_) { /* fall through to individual downloads */ }
+            }
+            selected.forEach((item, i) => setTimeout(() => downloadBlobDirect(item.blob, item.fileName), i * 300));
         });
 
         // Single-item viewer — tap a thumbnail (not its selection circle) to open here;
@@ -4359,7 +4374,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v76';
+            const __BUILD = 'v77';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4393,7 +4408,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=76';
+            const __SW_URL = 'sw.js?v=77';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
