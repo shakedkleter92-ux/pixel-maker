@@ -86,6 +86,18 @@
     ]
   },
   {
+    "key": "5_sheep",
+    "label": "5 Sheep",
+    "file": "5-sheep-32x.png",
+    "colors": [
+      "#480a30",
+      "#b41360",
+      "#ff327c",
+      "#ff80ae",
+      "#ffdae8"
+    ]
+  },
+  {
     "key": "ammo_8",
     "label": "Ammo 8",
     "file": "ammo-8-32x.png",
@@ -98,6 +110,23 @@
       "#89a257",
       "#bedc7f",
       "#eeffcc"
+    ]
+  },
+  {
+    "key": "aquaverse",
+    "label": "Aquaverse",
+    "file": "aquaverse-32x.png",
+    "colors": [
+      "#000924",
+      "#041b38",
+      "#093659",
+      "#145d87",
+      "#228399",
+      "#31b0b0",
+      "#46cfb3",
+      "#73f0c6",
+      "#abffd1",
+      "#d9ffe2"
     ]
   },
   {
@@ -391,6 +420,21 @@
     ]
   },
   {
+    "key": "insecta",
+    "label": "Insecta",
+    "file": "insecta-32x.png",
+    "colors": [
+      "#1a1417",
+      "#67413a",
+      "#af4b3b",
+      "#c18549",
+      "#d9cbae",
+      "#8db35e",
+      "#7c8381",
+      "#384d64"
+    ]
+  },
+  {
     "key": "kankei4",
     "label": "Kankei4",
     "file": "kankei4-32x.png",
@@ -399,6 +443,17 @@
       "#f42e1f",
       "#2f256b",
       "#060608"
+    ]
+  },
+  {
+    "key": "look_of_horror",
+    "label": "Look Of Horror",
+    "file": "look-of-horror-32x.png",
+    "colors": [
+      "#0a202f",
+      "#302d6a",
+      "#871c3e",
+      "#d32836"
     ]
   },
   {
@@ -436,6 +491,28 @@
       "#55a058",
       "#a1bf41",
       "#e3c054"
+    ]
+  },
+  {
+    "key": "moonlight_15",
+    "label": "Moonlight 15",
+    "file": "moonlight-15-32x.png",
+    "colors": [
+      "#030206",
+      "#070918",
+      "#090f33",
+      "#091e4d",
+      "#083253",
+      "#0d2f87",
+      "#0a4ca0",
+      "#2684ce",
+      "#36b5f5",
+      "#3afffb",
+      "#83c16f",
+      "#63a460",
+      "#3d824e",
+      "#2e6749",
+      "#1f4b43"
     ]
   },
   {
@@ -552,6 +629,32 @@
       "#bd4882",
       "#ff6b97",
       "#ffb5b5"
+    ]
+  },
+  {
+    "key": "pola5",
+    "label": "Pola5",
+    "file": "pola5-32x.png",
+    "colors": [
+      "#ebf9ff",
+      "#acd6f6",
+      "#52a5de",
+      "#18284a",
+      "#070810"
+    ]
+  },
+  {
+    "key": "smooth_polished_silver",
+    "label": "Smooth Polished Silver",
+    "file": "smooth-polished-silver-32x.png",
+    "colors": [
+      "#000000",
+      "#28211f",
+      "#4a393d",
+      "#67584c",
+      "#b092a7",
+      "#f2d6e2",
+      "#ffffff"
     ]
   },
   {
