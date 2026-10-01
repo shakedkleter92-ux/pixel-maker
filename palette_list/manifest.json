@@ -120,6 +120,37 @@
     ]
   },
   {
+    "key": "bloodmoon21",
+    "label": "Bloodmoon21",
+    "file": "bloodmoon21-32x.png",
+    "colors": [
+      "#130310",
+      "#1d0518",
+      "#270721",
+      "#3c0921",
+      "#520b20",
+      "#7d0f1f",
+      "#a8141d",
+      "#d3181c",
+      "#ff252b"
+    ]
+  },
+  {
+    "key": "borkfest",
+    "label": "Borkfest",
+    "file": "borkfest-32x.png",
+    "colors": [
+      "#dfd785",
+      "#ebc275",
+      "#f39949",
+      "#ff7831",
+      "#ca5a2e",
+      "#963c3c",
+      "#3a2802",
+      "#202215"
+    ]
+  },
+  {
     "key": "cc_29",
     "label": "Cc 29",
     "file": "cc-29-32x.png",
@@ -156,6 +187,35 @@
     ]
   },
   {
+    "key": "chasm",
+    "label": "Chasm",
+    "file": "chasm-32x.png",
+    "colors": [
+      "#85daeb",
+      "#5fc9e7",
+      "#5fa1e7",
+      "#5f6ee7",
+      "#4c60aa",
+      "#444774",
+      "#32313b",
+      "#463c5e",
+      "#5d4776",
+      "#855395",
+      "#ab58a8",
+      "#ca60ae",
+      "#f3a787",
+      "#f5daa7",
+      "#8dd894",
+      "#5dc190",
+      "#4ab9a3",
+      "#4593a5",
+      "#5efdf7",
+      "#ff5dcc",
+      "#fdfe89",
+      "#ffffff"
+    ]
+  },
+  {
     "key": "cl8uds",
     "label": "Cl8uds",
     "file": "cl8uds-32x.png",
@@ -168,6 +228,22 @@
       "#8fa0bf",
       "#9aabc9",
       "#a5b7d4"
+    ]
+  },
+  {
+    "key": "darkworld",
+    "label": "Darkworld",
+    "file": "darkworld-32x.png",
+    "colors": [
+      "#000000",
+      "#240142",
+      "#290573",
+      "#4a1cb8",
+      "#7312fc",
+      "#a065e3",
+      "#cf84f0",
+      "#e3b2fc",
+      "#fdcd86"
     ]
   },
   {
@@ -233,6 +309,29 @@
     ]
   },
   {
+    "key": "galaxy_flame",
+    "label": "Galaxy Flame",
+    "file": "galaxy-flame-32x.png",
+    "colors": [
+      "#699fad",
+      "#3a708e",
+      "#2b454f",
+      "#111215",
+      "#151d1a",
+      "#1d3230",
+      "#314e3f",
+      "#4f5d42",
+      "#9a9f87",
+      "#ede6cb",
+      "#f5d893",
+      "#e8b26f",
+      "#b6834c",
+      "#704d2b",
+      "#40231e",
+      "#151015"
+    ]
+  },
+  {
     "key": "gopals_primarymono",
     "label": "Gopals Primarymono",
     "file": "gopals-primarymono-32x.png",
@@ -243,6 +342,21 @@
       "#1f2a2b",
       "#829792",
       "#cad4d0"
+    ]
+  },
+  {
+    "key": "gothic_bit",
+    "label": "Gothic Bit",
+    "file": "gothic-bit-32x.png",
+    "colors": [
+      "#0e0e12",
+      "#1a1a24",
+      "#333346",
+      "#535373",
+      "#8080a4",
+      "#a6a6bf",
+      "#c1c1d2",
+      "#e6e6ec"
     ]
   },
   {
@@ -274,6 +388,73 @@
       "#a2a2a4",
       "#c8c6c9",
       "#e8e6e7"
+    ]
+  },
+  {
+    "key": "kankei4",
+    "label": "Kankei4",
+    "file": "kankei4-32x.png",
+    "colors": [
+      "#ffffff",
+      "#f42e1f",
+      "#2f256b",
+      "#060608"
+    ]
+  },
+  {
+    "key": "midnight_ablaze",
+    "label": "Midnight Ablaze",
+    "file": "midnight-ablaze-32x.png",
+    "colors": [
+      "#ff8274",
+      "#d53c6a",
+      "#7c183c",
+      "#460e2b",
+      "#31051e",
+      "#1f0510",
+      "#130208"
+    ]
+  },
+  {
+    "key": "miyazaki_16",
+    "label": "Miyazaki 16",
+    "file": "miyazaki-16-32x.png",
+    "colors": [
+      "#232228",
+      "#284261",
+      "#5f5854",
+      "#878573",
+      "#b8b095",
+      "#c3d5c7",
+      "#ebecdc",
+      "#2485a6",
+      "#54bad2",
+      "#754d45",
+      "#c65046",
+      "#e6928a",
+      "#1e7453",
+      "#55a058",
+      "#a1bf41",
+      "#e3c054"
+    ]
+  },
+  {
+    "key": "nopal_12",
+    "label": "Nopal 12",
+    "file": "nopal-12-32x.png",
+    "colors": [
+      "#e2e4df",
+      "#c5cfc4",
+      "#a8b5ae",
+      "#92929c",
+      "#ffeced",
+      "#fbd4d2",
+      "#f1b4b4",
+      "#cca3a3",
+      "#f1eab6",
+      "#e4dba0",
+      "#cac18a",
+      "#aba47b"
     ]
   },
   {
@@ -402,6 +583,61 @@
       "#7e9e99",
       "#5d6872",
       "#433455"
+    ]
+  },
+  {
+    "key": "wine_town",
+    "label": "Wine Town",
+    "file": "wine-town-32x.png",
+    "colors": [
+      "#451e43",
+      "#754573",
+      "#926190",
+      "#ca9ac8",
+      "#6b2f73",
+      "#752f73",
+      "#922890",
+      "#ca2894",
+      "#ca28c8",
+      "#ca61c8",
+      "#ca7dc8",
+      "#ca6190",
+      "#752f5d",
+      "#922856",
+      "#ca2856",
+      "#ca4858",
+      "#ca6556",
+      "#5f455d",
+      "#74455d",
+      "#753b5d",
+      "#924756",
+      "#ca7f90",
+      "#ca8dab",
+      "#916156",
+      "#ca8156",
+      "#ca9a56",
+      "#ca9a90",
+      "#929a56",
+      "#589a56",
+      "#586156",
+      "#929a90",
+      "#ae9aab",
+      "#589aa6",
+      "#586190",
+      "#589ac8",
+      "#929ac8",
+      "#5860c8",
+      "#5828c8",
+      "#582890",
+      "#8428c8",
+      "#9528c8",
+      "#ad28c8",
+      "#5f2f73",
+      "#772890",
+      "#af61c8",
+      "#ae7dc8",
+      "#9261c8",
+      "#5f4573"
     ]
   }
 ]

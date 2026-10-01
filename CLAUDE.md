@@ -258,9 +258,10 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   fill/round-thumb rendering and ignores the app's square custom `::-webkit-slider-thumb`/track
   styling entirely; tried that first, it looked completely inconsistent with the rest of the
   UI. The track itself is `width: 1px` (reported as "very thick" at an earlier `4px`) — keep it
-  that thin, matching the panel's own horizontal sliders' `height: 1px`; only the thumb (`20px`
-  square on mobile, from the shared `input[type=range]::-webkit-slider-thumb` override) should
-  read as chunky, not the track. It's short and vertically centered (`top: 50%; height: 220px;
+  that thin, matching the panel's own horizontal sliders' `height: 1px`; only the thumb (`16px`
+  square on mobile, from the shared `input[type=range]::-webkit-slider-thumb` override — was
+  `20px`, sized down slightly) should read as chunky, not the track. It's short and vertically
+  centered (`top: 50%; height: 220px;
   transform: translateY(-50%)`) rather than spanning most of the screen height, which is how it
   originally shipped and was reported as too large/dominant. Range raised from `max="300"` to
   `max="500"` (the default `value` is still `300` on load either way).
@@ -361,12 +362,21 @@ a folder's contents on its own. The mechanism:
   shows the ten built-ins — never let a broken/missing manifest break the rest of the app.
 - The PNGs themselves are never fetched by the running app (like `color pallete/`, they're source
   material for the script only) — only the generated `manifest.json` is loaded at runtime.
-- The palette bar (`.palette-presets`) is a fixed 4-column grid so every button — built-in or
-  folder-sourced, short label or long — is exactly the same size; long labels clip with an
+- The palette bar (`.palette-presets`) is a fixed 4-column grid — `grid-template-columns:
+  repeat(4, minmax(0, 1fr))`, **not** a plain `repeat(4, 1fr)` — so every button, built-in or
+  folder-sourced, short label or long, is exactly the same size; long labels clip with an
   ellipsis (`title` attribute still carries the full name) rather than resizing their button.
-  It's also capped to `max-height: 50px` (~2 rows) with `overflow-y: auto` — with the built-ins
-  plus everything `palette_list/` adds, this list can get long, and showing it all at once made
-  the panel very tall; it scrolls internally instead now.
+  The `minmax(0, ...)` matters: a plain `1fr` track won't shrink below its content's intrinsic
+  width, so one long un-ellipsized label could widen the whole grid and trigger a stray
+  horizontal scrollbar alongside the intended vertical one — that shipped once, paired with
+  `overflow-x: hidden` as a belt-and-suspenders backstop. It's also capped to
+  `max-height: 78px` (~3 rows, was ~2 rows at `50px`) with `overflow-y: auto` — with the
+  built-ins plus everything `palette_list/` adds, this list can get long, and showing it all at
+  once made the panel very tall; it scrolls internally instead now. The scrollbar itself is
+  styled square (`::-webkit-scrollbar-thumb { border-radius: 0 }` + a visible
+  `::-webkit-scrollbar-track` background) rather than the browser's default rounded pill, which
+  was reported as unclear — both that it was a scrollbar at all and how much there was left to
+  scroll.
 - The ten built-in palettes in `PALETTE_PRESETS` are separate and unaffected by any of this —
   they're not sourced from `palette_list/`, don't touch them for this feature.
 
@@ -378,7 +388,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v73`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v75`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.

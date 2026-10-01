@@ -250,15 +250,39 @@
 
         .palette-presets {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            /* minmax(0, 1fr), not a plain 1fr — a plain 1fr column won't shrink below its
+               content's intrinsic width, so a long un-ellipsized label (before .pal-tgt's
+               own overflow:hidden even gets a chance to apply) could widen the whole grid
+               past its container and trigger a stray horizontal scrollbar alongside the
+               intended vertical one. */
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             grid-auto-rows: min-content;
             gap: 4px;
             margin-bottom: 8px;
-            /* Capped to ~2 rows — there can be many presets once the palette_list/ folder
+            /* Capped to ~3 rows — there can be many presets once the palette_list/ folder
                fills up, and showing them all at once made the panel very tall. Scrolls for
                the rest instead of pushing the rest of the panel (or the screen) down. */
-            max-height: 50px;
+            max-height: 78px;
+            overflow-x: hidden;
             overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--text) var(--surface);
+        }
+
+        /* Square, visible scrollbar matching the rest of the UI's no-rounded-corners design
+           — the browser's default rounded "pill" thumb was reported as unclear/hard to spot,
+           and gave no sense of how much there was left to scroll. */
+        .palette-presets::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .palette-presets::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+
+        .palette-presets::-webkit-scrollbar-thumb {
+            background: var(--text);
+            border-radius: 0;
         }
 
         /* Fixed grid = every preset button is the same size no matter its label's length
@@ -1234,8 +1258,8 @@
             }
 
             input[type=range]::-webkit-slider-thumb {
-                width: 20px;
-                height: 20px;
+                width: 16px;
+                height: 16px;
                 border-radius: 0
             }
 
@@ -4321,7 +4345,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v73';
+            const __BUILD = 'v75';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4355,7 +4379,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=73';
+            const __SW_URL = 'sw.js?v=75';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
