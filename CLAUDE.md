@@ -219,7 +219,14 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   the latest capture as a live thumbnail (`updateGalleryFabThumb()`) instead of a generic icon,
   like a phone camera's roll shortcut. Tapping it opens `#gallery-screen`, a full-screen grid —
   **light theme, same as the rest of the app** (white bg, black = selected; don't reintroduce a
-  dark theme here, that was tried and explicitly reverted). Multi-select is a distinct mode
+  dark theme here, that was tried and explicitly reverted). `#gallery-grid` needs
+  `align-content: start` — without it, since the grid is `flex: 1` (fills the whole screen) but
+  `grid-auto-rows` is left at its implicit `auto`, a visitor with only a few items (not enough
+  to fill the screen) gets that leftover vertical space spread across the row tracks instead of
+  left after the last row; every row becomes far taller than its square `.gallery-item`s, which
+  read as a huge gap between rows with the next row's thumbnails pushed way down the screen.
+  `align-content: start` packs rows tightly regardless of how much extra height the container
+  has. Multi-select is a distinct mode
   (`let gallerySelectMode`, off by default), toggled by the header's `#gallery-select-toggle`
   ("Select"/"Cancel") — **not** always-on. It used to be an always-visible tiny corner circle
   on every thumbnail, but that was easy to miss with a finger and just opened the viewer
@@ -439,7 +446,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v80`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v81`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.

@@ -840,6 +840,14 @@
             overflow-y: auto;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
+            /* Without this, when there are few enough items that the grid (flex:1, so it
+               fills the whole screen) has leftover height, the browser spreads that extra
+               space across the row tracks instead of leaving it after the last row — rows
+               end up far taller than their square items, reading as a huge gap between rows
+               with the next row's thumbnails pushed way down. Packing rows at the top keeps
+               every row exactly as tall as its items, with any leftover space where it
+               belongs: below the last row, same as any normal photo gallery with few shots. */
+            align-content: start;
             gap: 2px;
             padding: 2px;
         }
@@ -4434,7 +4442,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v80';
+            const __BUILD = 'v81';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4468,7 +4476,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=80';
+            const __SW_URL = 'sw.js?v=81';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
