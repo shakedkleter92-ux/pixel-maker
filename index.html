@@ -673,7 +673,7 @@
             width: 40px;
             height: 40px;
             top: 20px;
-            left: 20px;
+            right: 20px;
             border: none;
             border-radius: 0;
             background: var(--fab-bg);
@@ -1618,13 +1618,15 @@
 
         /* Resolution — persistent vertical slider on the right edge, both Live and Upload.
            Moved out of the panel entirely: this is the control worth playing with live while
-           watching the canvas, so it shouldn't need the menu open at all. Runs from just
-           below the top toggle/ratio button down to just above the bottom control row. */
+           watching the canvas, so it shouldn't need the menu open at all. Short and
+           vertically centered (not spanning the full screen height) — the menu toggle sits
+           above it, same edge. */
         #mob-res-slider-wrap {
             position: fixed;
-            top: 90px;
-            bottom: 190px;
+            top: 50%;
             right: 14px;
+            height: 220px;
+            transform: translateY(-50%);
             z-index: 86;
             flex-direction: column;
             align-items: center;
@@ -1648,7 +1650,7 @@
 
         #mob-res-slider-wrap input[type=range] {
             flex: 1;
-            width: 4px;
+            width: 1px;
             /* Rotated via writing-mode (not -webkit-appearance:slider-vertical, which pulls
                in the OS's own native blue fill/thumb and ignores the square custom thumb
                styling below) so it stays the same flat square design as every other control. */
@@ -4319,7 +4321,7 @@
         // PWA: register service worker for installability + reliable updates
         (function () {
             if (!('serviceWorker' in navigator)) return;
-            const __BUILD = 'v72';
+            const __BUILD = 'v73';
             try {
                 const bt = document.getElementById('build-tag');
                 if (bt) bt.textContent = __BUILD;
@@ -4353,7 +4355,7 @@
             window.forceAppUpdate = resetServiceWorkerAndReload;
 
             // Versioned SW URL forces Safari to re-fetch updated sw.js
-            const __SW_URL = 'sw.js?v=72';
+            const __SW_URL = 'sw.js?v=73';
             navigator.serviceWorker.register(__SW_URL).then((reg) => {
                 function trySkipWaiting() {
                     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

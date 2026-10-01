@@ -205,7 +205,8 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
 - **3136 / 3234 MOBILE** — drawer panel and camera buttons. `#panel-toggle-bar` opens the panel
   — it went from a bottom bar, to a full-width top bar, to its current form: a `40×40` square
   FAB (`#panel-toggle-icon`, a plain `☰` span, no title text and no separate `<button>` inside
-  it — the whole square is still the click target) floating at `top: 20px; left: 20px`, same
+  it — the whole square is still the click target) floating at `top: 20px; right: 20px` (was
+  `left: 20px` — moved to sit above the resolution slider below, same edge), same
   size/treatment as the other buttons everywhere. It does **not** reserve any layout space —
   `#main`, `#panel`, and the panel-open scrim (`#panel.panel-open::before`) all sit at `top: 0`.
   **The toggle itself hides while the panel is open** (`body.panel-open #panel-toggle-bar {
@@ -246,18 +247,23 @@ Everything lives in one `<script>`. Banner comments (`// ═══ NAME`) mark t
   `updateModeRowActive()`) — Upload's backdrop is the plain white canvas, so white-on-white text
   would otherwise disappear.
   **Resolution lives outside the panel entirely** — `#mob-res-slider-wrap` is a persistent
-  vertical slider floating on the right edge (`top: 90px` to `bottom: 190px`), shown in both
-  Live and Upload, same as `#mob-gallery`. It used to be a `.slider-row` inside the panel's "01
-  Resolution" section (now removed — Palette renumbered to "01", Export to "02"); moved out
-  because dragging it live while watching the grid change *is* the app, and that shouldn't
-  require opening a menu first. `#g-res`/`#g-res-v` kept their IDs across the move, so
-  `on('g-res', 'input', ...)` (still syncing `state.imgRes` + `liveState.res` together) needed
-  no changes. The vertical orientation is `writing-mode: vertical-lr; direction: rtl;` with
-  `-webkit-appearance: none` — **not** `-webkit-appearance: slider-vertical`, which pulls in the
-  browser's own native blue fill/round-thumb rendering and ignores the app's square custom
-  `::-webkit-slider-thumb`/track styling entirely; tried that first, it looked completely
-  inconsistent with the rest of the UI. Range raised from `max="300"` to `max="500"` (the
-  default `value` is still `300` on load either way).
+  vertical slider floating on the right edge, shown in both Live and Upload, same as
+  `#mob-gallery`. It used to be a `.slider-row` inside the panel's "01 Resolution" section (now
+  removed — Palette renumbered to "01", Export to "02"); moved out because dragging it live
+  while watching the grid change *is* the app, and that shouldn't require opening a menu first.
+  `#g-res`/`#g-res-v` kept their IDs across the move, so `on('g-res', 'input', ...)` (still
+  syncing `state.imgRes` + `liveState.res` together) needed no changes. The vertical
+  orientation is `writing-mode: vertical-lr; direction: rtl;` with `-webkit-appearance: none` —
+  **not** `-webkit-appearance: slider-vertical`, which pulls in the browser's own native blue
+  fill/round-thumb rendering and ignores the app's square custom `::-webkit-slider-thumb`/track
+  styling entirely; tried that first, it looked completely inconsistent with the rest of the
+  UI. The track itself is `width: 1px` (reported as "very thick" at an earlier `4px`) — keep it
+  that thin, matching the panel's own horizontal sliders' `height: 1px`; only the thumb (`20px`
+  square on mobile, from the shared `input[type=range]::-webkit-slider-thumb` override) should
+  read as chunky, not the track. It's short and vertically centered (`top: 50%; height: 220px;
+  transform: translateY(-50%)`) rather than spanning most of the screen height, which is how it
+  originally shipped and was reported as too large/dominant. Range raised from `max="300"` to
+  `max="500"` (the default `value` is still `300` on load either way).
 - **3690 INIT** — does **not** default into Live mode / start the camera directly anymore.
   `playSplashThen(next)` plays a purely presentational splash (logo entrance animation, the app
   name typed out character-by-character with a blinking caret, then a "Tap to continue" hint
@@ -372,7 +378,7 @@ a folder's contents on its own. The mechanism:
   system — Upload/Live both regenerate `state.cells` wholesale from the source (image or
   camera frame) rather than mutating individual cells.
 - **No persistence.** There is no localStorage; a reload is a clean slate. Intentional.
-- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v72`) **and** `__BUILD`/`__SW_URL`'s `?v=`
+- **Bump `CACHE` in `sw.js`** (currently `pixel-maker-v73`) **and** `__BUILD`/`__SW_URL`'s `?v=`
   near INIT in `index.html` **together**, on any deploy — all three in lockstep, or returning
   users (Safari especially — it's known to under-invalidate a cached `sw.js` byte-for-byte if
   its URL doesn't change) keep the old app indefinitely regardless of what `CACHE` says.
